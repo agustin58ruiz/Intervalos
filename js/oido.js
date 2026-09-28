@@ -950,5 +950,14 @@
   initAudio();
   renderChips(); renderAnswers();
   renderSteps();
+  // API de sonido compartida con los módulos de teoría
+  window.Sonido = {
+    tocar(m, dur = 1.1){ audio(); tone(m, ctx.currentTime + 0.03, dur); },
+    intervalo(a, b, armonico = false, veces = 1){ return playInterval(a, b, armonico, veces); },
+    secuencia(ms, paso = 0.55){ audio(); stopAll(); const t = ctx.currentTime + 0.05; ms.forEach((m, i) => tone(m, t + i*paso, paso + 0.5)); return ms.length*paso*1000; },
+    acorde(ms){ audio(); stopAll(); const t = ctx.currentTime + 0.05; ms.forEach(m => tone(m, t, 1.6)); },
+    parar(){ stopAll(); }
+  };
+  window.Oido = { setView: v => setView(v), vista: () => view };
   try { const v0 = localStorage.getItem('intervalos-vista'); if (v0 === 'learn' || v0 === 'notes') setView(v0); } catch(e){}
 })();

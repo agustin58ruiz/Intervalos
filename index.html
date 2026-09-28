@@ -3,19 +3,39 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Intervalos</title>
+<title>Aula de teoría musical</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Young+Serif&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/oido.css">
+<link rel="stylesheet" href="css/teoria.css">
 </head>
 <body>
 <main>
-  <h1>Intervalos</h1>
-  <div class="tabs" role="tablist" aria-label="Modo">
-    <button role="tab" id="tabPractice" aria-controls="practiceView" aria-selected="true">Practicar</button>
-    <button role="tab" id="tabLearn" aria-controls="learnView" aria-selected="false">Aprender</button>
-    <button role="tab" id="tabNotes" aria-controls="notesView" aria-selected="false">Notas</button>
+  <header class="top">
+    <h1>Aula de teoría musical</h1>
+    <label class="nombres">Nombres
+      <select id="nombresSel">
+        <option value="ambos">Do (C)</option>
+        <option value="latino">Do Re Mi</option>
+        <option value="anglo">C D E</option>
+      </select>
+    </label>
+  </header>
+  <nav class="nav" role="tablist" aria-label="Secciones">
+    <button role="tab" id="nav-aprender" aria-controls="sec-aprender" aria-selected="true">Aprender</button>
+    <button role="tab" id="nav-practicar" aria-controls="sec-practicar" aria-selected="false">Practicar</button>
+    <button role="tab" id="nav-evaluar" aria-controls="sec-evaluar" aria-selected="false">Evaluación</button>
+    <button role="tab" id="nav-oido" aria-controls="sec-oido" aria-selected="false">Oído</button>
+  </nav>
+  <section id="sec-aprender" role="tabpanel" aria-labelledby="nav-aprender"></section>
+  <section id="sec-practicar" role="tabpanel" aria-labelledby="nav-practicar" hidden></section>
+  <section id="sec-evaluar" role="tabpanel" aria-labelledby="nav-evaluar" hidden></section>
+  <section id="sec-oido" role="tabpanel" aria-labelledby="nav-oido" hidden>
+  <div class="tabs" role="tablist" aria-label="Ejercicios de oído">
+    <button role="tab" id="tabPractice" aria-controls="practiceView" aria-selected="true">Adivinar intervalos</button>
+    <button role="tab" id="tabLearn" aria-controls="learnView" aria-selected="false">Conocer intervalos</button>
+    <button role="tab" id="tabNotes" aria-controls="notesView" aria-selected="false">Lectura rápida</button>
   </div>
   <p class="lede" id="lede">Escuchá dos notas y adiviná la distancia entre ellas. También podés tocar dos teclas para oír y nombrar cualquier intervalo.</p>
 
@@ -147,10 +167,17 @@
     </fieldset>
   </details>
   </div>
+  </section>
 </main>
 
 <script src="js/vendor/vexflow.js"></script>
 <script src="js/muestras-piano.js"></script>
 <script src="js/oido.js"></script>
+<script src="js/teoria/musica.js"></script>
+<script src="js/teoria/visual.js"></script>
+<script src="js/teoria/progreso.js"></script>
+<script src="js/teoria/ejercicios.js"></script>
+<script src="js/teoria/lecciones.js"></script>
+<script src="js/teoria/app.js"></script>
 </body>
 </html>
