@@ -121,10 +121,35 @@ legend{font-size:.9rem;color:var(--muted);margin-bottom:8px;padding:0}
 
 /* Pestañas */
 .tabs{display:inline-flex;gap:4px;padding:4px;margin:6px 0 16px;background:var(--surface);border:1.5px solid var(--line);border-radius:999px}
-.tabs button{border:0;background:none;border-radius:999px;padding:8px 18px;font-weight:600;color:var(--muted)}
+.tabs button{border:0;background:none;border-radius:999px;padding:8px 16px;font-weight:600;color:var(--muted)}
 .tabs button[aria-selected=true]{background:var(--ink);color:var(--paper)}
 .tabs button:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
 [hidden]{display:none!important}
+
+/* Notas */
+#notesView{margin-top:22px}
+.nstaff{max-width:340px;margin:0 auto 14px;background:var(--surface);border:1.5px solid var(--line);border-radius:14px;padding:6px 10px;min-height:150px}
+.nstaff svg{display:block;width:100%;height:auto}
+.nopts{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.nopt{background:var(--surface);border:1.5px solid var(--line);border-radius:12px;padding:16px 10px;font-size:1.25rem;font-weight:600;position:relative}
+.nopt kbd{position:absolute;top:6px;left:9px;font:inherit;font-size:.7rem;font-weight:500;color:var(--muted)}
+.nopt:disabled{cursor:default}
+.nopt.correct{border-color:var(--ok);background:color-mix(in srgb,var(--ok) 14%,var(--surface))}
+.nopt.wrong{border-color:var(--bad);background:color-mix(in srgb,var(--bad) 12%,var(--surface))}
+.nmap{margin-top:22px}
+.nlists{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:10px 0 12px;font-size:.92rem}
+.nlists h4{margin:0 0 4px;font-size:.85rem;font-weight:600;color:var(--muted)}
+.nlists p{margin:0}
+.brow{display:grid;grid-template-columns:4.6em 1fr 3em;align-items:center;gap:8px;height:24px;font-size:.85rem}
+.brow .lab{white-space:nowrap}
+.brow .val{text-align:right;color:var(--muted);font-variant-numeric:tabular-nums}
+.btrack{position:relative;height:100%}
+.btrack::before{content:"";position:absolute;left:0;right:0;top:50%;border-top:1px solid var(--line)}
+.btrack .g{position:absolute;top:0;bottom:0;border-left:1px dashed var(--line)}
+.brange{position:absolute;top:50%;height:8px;margin-top:-4px;border-radius:4px;background:color-mix(in srgb,var(--muted) 35%,transparent)}
+.bdot{position:absolute;top:50%;width:10px;height:10px;margin:-5px 0 0 -5px;border-radius:50%;border:2px solid var(--surface)}
+.baxis{display:grid;grid-template-columns:4.6em 1fr 3em;gap:8px;font-size:.72rem;color:var(--muted)}
+.baxis div{display:flex;justify-content:space-between}
 
 /* Aprender */
 #learnView{margin-top:22px}
@@ -161,6 +186,7 @@ legend{font-size:.9rem;color:var(--muted);margin-bottom:8px;padding:0}
   <div class="tabs" role="tablist" aria-label="Modo">
     <button role="tab" id="tabPractice" aria-controls="practiceView" aria-selected="true">Practicar</button>
     <button role="tab" id="tabLearn" aria-controls="learnView" aria-selected="false">Aprender</button>
+    <button role="tab" id="tabNotes" aria-controls="notesView" aria-selected="false">Notas</button>
   </div>
   <p class="lede" id="lede">Escuchá dos notas y adiviná la distancia entre ellas. También podés tocar dos teclas para oír y nombrar cualquier intervalo.</p>
 
@@ -178,7 +204,7 @@ legend{font-size:.9rem;color:var(--muted);margin-bottom:8px;padding:0}
       <label><input type="radio" name="mode" value="harm"><span>Juntas</span></label>
       <label><input type="radio" name="mode" value="mix"><span>Todo</span></label>
     </div></div>
-<div class="clefbar"><span>Inicio</span>
+<div class="clefbar" id="rootBar"><span>Inicio</span>
     <div class="seg" id="rootSeg">
       <label><input type="radio" name="rootMode" value="random"><span>Aleatoria</span></label>
       <label><input type="radio" name="rootMode" value="fixed"><span>Fija</span></label>
@@ -189,7 +215,33 @@ legend{font-size:.9rem;color:var(--muted);margin-bottom:8px;padding:0}
       <option value="8">Sol♯</option><option value="9">La</option><option value="10">La♯</option><option value="11">Si</option>
     </select></div>
   <div class="kb-wrap"><div class="keyboard" id="keyboard" aria-label="Teclado de Do4 a Do6"></div></div>
-  <div class="legend"><span style="--c:var(--first)">Primera nota</span><span style="--c:var(--second)">Segunda nota</span></div>
+  <div class="legend" id="kbLegend"><span style="--c:var(--first)">Primera nota</span><span style="--c:var(--second)">Segunda nota</span></div>
+
+  <section id="notesView" role="tabpanel" aria-labelledby="tabNotes" hidden>
+    <div class="clefbar"><span>Alteraciones</span>
+      <div class="seg" id="accSeg">
+        <label><input type="radio" name="nacc" value="none"><span>Sin alteraciones</span></label>
+        <label><input type="radio" name="nacc" value="acc"><span>Con ♯ y ♭</span></label>
+        <label><input type="radio" name="nacc" value="key"><span>Con armadura</span></label>
+      </div></div>
+    <div class="nstaff" id="nStaff" aria-live="polite"></div>
+    <div class="status" id="nStatus" aria-live="polite"><small>¿Qué nota es? Elegí una de las cuatro opciones (o usá las teclas 1 a 4).</small></div>
+    <div class="nopts" id="nOpts"></div>
+    <div class="controls">
+      <button class="btn primary" id="nNext">Otra nota</button>
+      <button class="btn secondary" id="nPlay">Escuchar</button>
+    </div>
+    <div class="score">
+      <div><b id="nOk">0</b> aciertos de <b id="nTotal">0</b></div>
+      <div>Racha: <b id="nStreak">0</b></div>
+    </div>
+    <details class="nmap" id="nMapBox" open>
+      <summary>Qué te conviene practicar</summary>
+      <div id="nMap"></div>
+      <p class="stats-note">Cada nota lleva una distribución beta de tu probabilidad de acertarla. Arranca en Beta(1, 1), que no sabe nada; cada acierto suma 1 a α y cada error suma 1 a β (se recuerdan las últimas 20 respuestas por nota). Para elegir la próxima nota se saca un valor al azar de la distribución de cada una y sale la más baja: las que fallás aparecen seguido, las que ya sabés aparecen menos pero no desaparecen. La barra muestra el rango donde está tu acierto con 90% de probabilidad y el punto, el valor esperado.</p>
+      <button class="mini" id="nReset">Borrar historial de notas</button>
+    </details>
+  </section>
 
   <section id="learnView" role="tabpanel" aria-labelledby="tabLearn" hidden>
     <h2 class="lh">Elegí un intervalo</h2>
@@ -452,6 +504,7 @@ legend{font-size:.9rem;color:var(--muted);margin-bottom:8px;padding:0}
 
   function onKey(m){
     audio(); cancelAuto();
+    if (view === 'notes'){ tone(m, ctx.currentTime+0.02, 1.1); return; }
     // Durante una pregunta sin responder, la tecla solo suena (sin revelar nada)
     if (view === 'practice' && q && !q.answered){ tone(m, ctx.currentTime+0.02, 1.1); return; }
     if (pick === null){
@@ -929,21 +982,24 @@ legend{font-size:.9rem;color:var(--muted);margin-bottom:8px;padding:0}
   }
   const LEDE = {
     practice: 'Escuchá dos notas y adiviná la distancia entre ellas. También podés tocar dos teclas para oír y nombrar cualquier intervalo.',
-    learn: 'Conocé cada intervalo: cómo suena subiendo, bajando y junto, qué canción lo empieza y con cuál se suele confundir.'
+    learn: 'Conocé cada intervalo: cómo suena subiendo, bajando y junto, qué canción lo empieza y con cuál se suele confundir.',
+    notes: 'Leé la nota en el pentagrama y elegí su nombre. Las notas que más te cuestan salen más seguido.'
   };
   function setView(v){
     if (v === view) return;
     view = v;
     try { localStorage.setItem('intervalos-vista', v); } catch(e){}
-    cancelAuto(); stopAll(); clearTimeout(cmpTimer); pick = null; clearKeys();
+    cancelAuto(); stopAll(); clearTimeout(cmpTimer); clearTimeout(nTimer); pick = null; clearKeys();
     staffEl.hidden = true; invState = null; invEl.hidden = true;
-    const learn = v === 'learn';
-    $('tabPractice').setAttribute('aria-selected', String(!learn));
-    $('tabLearn').setAttribute('aria-selected', String(learn));
-    $('practiceView').hidden = learn; $('learnView').hidden = !learn; $('modeBar').hidden = learn;
+    const learn = v === 'learn', notes = v === 'notes';
+    [['tabPractice','practice'],['tabLearn','learn'],['tabNotes','notes']].forEach(([id, x]) => $(id).setAttribute('aria-selected', String(v === x)));
+    $('practiceView').hidden = v !== 'practice'; $('learnView').hidden = !learn; $('notesView').hidden = !notes;
+    $('modeBar').hidden = v !== 'practice'; $('rootBar').hidden = notes; $('kbLegend').hidden = notes;
     $('lede').textContent = LEDE[v];
-    $(learn ? 'learnStaffSlot' : 'practiceStaffSlot').append(staffEl, invEl);
-    if (learn){
+    if (!notes) $(learn ? 'learnStaffSlot' : 'practiceStaffSlot').append(staffEl, invEl);
+    if (notes){
+      if (!nq) newNote(); else { drawNote(); renderNoteMap(); if (nq.answered) keyEls[nq.midi] && keyEls[nq.midi].classList.add(nq.guess === nq.name ? 'first' : 'second'); }
+    } else if (learn){
       renderLearnPick(); renderLearnStat();
       if (learnS !== null){ $('learnCard').hidden = false; setInversion(learnLo, learnLo + learnS, false); lightKeys(learnLo, learnLo + learnS); drawStaff(learnLo, learnLo + learnS, false); }
     } else if (q && q.answered){
@@ -952,8 +1008,234 @@ legend{font-size:.9rem;color:var(--muted);margin-bottom:8px;padding:0}
   }
   $('tabPractice').addEventListener('click', () => setView('practice'));
   $('tabLearn').addEventListener('click', () => setView('learn'));
+  $('tabNotes').addEventListener('click', () => setView('notes'));
   document.querySelectorAll('.lplay [data-play]').forEach(b => b.addEventListener('click', () => playLearn(b.dataset.play)));
   $('lOther').addEventListener('click', () => { if (learnS !== null) showLearn(learnS, true); });
+
+  // ---------- Notas ----------
+  const LETTERS = ['Do','Re','Mi','Fa','Sol','La','Si'];
+  const LETTER_PC = [0,2,4,5,7,9,11];
+  const SHARP_ORDER = [3,0,4,1,5,2,6], FLAT_ORDER = [6,2,5,1,4,0,3];
+  const KEYSIGS = [
+    {vf:'G', name:'Sol mayor', n:1}, {vf:'D', name:'Re mayor', n:2}, {vf:'A', name:'La mayor', n:3},
+    {vf:'E', name:'Mi mayor', n:4}, {vf:'B', name:'Si mayor', n:5},
+    {vf:'F', name:'Fa mayor', n:-1}, {vf:'Bb', name:'Si♭ mayor', n:-2}, {vf:'Eb', name:'Mi♭ mayor', n:-3},
+    {vf:'Ab', name:'La♭ mayor', n:-4}, {vf:'Db', name:'Re♭ mayor', n:-5}
+  ];
+  const keyAcc = (ks, letter) => !ks ? 0 : ks.n > 0 ? (SHARP_ORDER.slice(0, ks.n).includes(letter) ? 1 : 0) : (FLAT_ORDER.slice(0, -ks.n).includes(letter) ? -1 : 0);
+  const accSign = a => a > 0 ? '♯' : a < 0 ? '♭' : '';
+  const nName = (letter, acc) => LETTERS[letter] + accSign(acc);
+  const nMidi = (letter, oct, acc) => 12*(oct+1) + LETTER_PC[letter] + acc;
+  // ♯/♭ que caen en teclas negras (sin Mi♯, Si♯, Do♭ ni Fa♭)
+  const plainAcc = (letter, acc) => acc === 0 || (acc > 0 ? ![2,6].includes(letter) : ![0,3].includes(letter));
+
+  let nAcc = 'none';
+  try { nAcc = localStorage.getItem('intervalos-notas-alt') || 'none'; } catch(e){}
+  if (!['none','acc','key'].includes(nAcc)) nAcc = 'none';
+  let beta = {};
+  try { beta = JSON.parse(localStorage.getItem('intervalos-notas-beta')) || {}; } catch(e){ beta = {}; }
+  const saveBeta = () => { try { localStorage.setItem('intervalos-notas-beta', JSON.stringify(beta)); } catch(e){} };
+  const nScore = {ok:0, total:0, streak:0};
+  try { Object.assign(nScore, JSON.parse(localStorage.getItem('intervalos-notas-puntaje')) || {}); } catch(e){}
+  let nq = null, nTimer = null, nLastKey = null;
+
+  // Muestreo de Beta a partir de dos Gamma (Marsaglia y Tsang)
+  function randn(){ let u = 0, v = 0; while (!u) u = Math.random(); while (!v) v = Math.random(); return Math.sqrt(-2*Math.log(u)) * Math.cos(2*Math.PI*v); }
+  function randGamma(k){
+    if (k < 1) return randGamma(k + 1) * Math.pow(Math.random(), 1/k);
+    const d = k - 1/3, c = 1/Math.sqrt(9*d);
+    for (;;){
+      let x, v; do { x = randn(); v = 1 + c*x; } while (v <= 0);
+      v = v*v*v; const u = Math.random();
+      if (u < 1 - 0.0331*x*x*x*x || Math.log(u) < 0.5*x*x + d*(1 - v + Math.log(v))) return d*v;
+    }
+  }
+  function randBeta(a, b){ const x = randGamma(a), y = randGamma(b); return x/(x+y); }
+  const betaOf = k => beta[k] || [1,1];
+  function updateBeta(k, ok){
+    let [a, b] = betaOf(k);
+    if (ok) a++; else b++;
+    const n = a + b - 2, MAX = 20;
+    if (n > MAX){ a = 1 + (a-1)*MAX/n; b = 1 + (b-1)*MAX/n; }
+    beta[k] = [+a.toFixed(3), +b.toFixed(3)]; saveBeta();
+  }
+  function betaSummary(a, b){
+    const xs = []; for (let i = 0; i < 400; i++) xs.push(randBeta(a, b));
+    xs.sort((x,y) => x-y);
+    return {mean: a/(a+b), lo: xs[20], hi: xs[379]};
+  }
+
+  // Notas posibles según la clave y el tipo de alteraciones
+  function noteClefs(){
+    const c = settings.clef;
+    // en Sol y Fa: Do3–Do4 en clave de Fa, Do4–Do5 en clave de Sol
+    return c === 'both' ? [['bass',3,0,4,0],['treble',4,0,5,0]] : c === 'bass' ? [['bass',2,0,4,0]] : [['treble',4,0,6,0]];
+  }
+  function candidates(ks){
+    const out = [];
+    noteClefs().forEach(([clef, o1, l1, o2, l2]) => {
+      for (let oct = o1; oct <= o2; oct++) for (let letter = 0; letter < 7; letter++){
+        if (oct === o1 && letter < l1) continue;
+        if (oct === o2 && letter > l2) break;
+        const accs = nAcc === 'acc' ? [-1,0,1].filter(a => plainAcc(letter, a)) : [nAcc === 'key' ? keyAcc(ks, letter) : 0];
+        accs.forEach(acc => {
+          const midi = nMidi(letter, oct, acc);
+          if (midi < LOW || midi > HIGH) return;
+          const name = nName(letter, acc);
+          out.push({clef, letter, oct, acc, midi, name, key: `${clef}|${name}${oct}`});
+        });
+      }
+    });
+    return out;
+  }
+  function distractors(n, ks){
+    const pool = [];
+    const add = (letter, acc) => { const nm = nName(((letter % 7) + 7) % 7, acc); if (nm !== n.name && !pool.includes(nm)) pool.push(nm); };
+    const shuffle = a => a.sort(() => Math.random() - 0.5);
+    if (nAcc === 'key'){
+      if (n.acc !== 0) add(n.letter, 0);                         // olvidarse de la armadura
+      else if (ks) add(n.letter, ks.n > 0 ? 1 : -1);             // aplicarla donde no va
+      shuffle([-1,1,-2,2]).forEach(d => { const l = ((n.letter + d) % 7 + 7) % 7; add(l, keyAcc(ks, l)); });
+    } else if (nAcc === 'acc'){
+      const same = shuffle([-1,0,1].filter(a => a !== n.acc && plainAcc(n.letter, a)));
+      if (same.length) add(n.letter, same[0]);
+      shuffle([-1,1,-2,2]).forEach(d => { const l = ((n.letter + d) % 7 + 7) % 7; add(l, plainAcc(l, n.acc) ? n.acc : 0); });
+      if (same[1] !== undefined) add(n.letter, same[1]);
+    } else {
+      shuffle([-1,1,-2,2]).forEach(d => add(n.letter + d, 0));
+    }
+    return pool.slice(0, 3);
+  }
+  function newNote(){
+    clearTimeout(nTimer);
+    const ks = nAcc === 'key' ? KEYSIGS[Math.floor(Math.random()*KEYSIGS.length)] : null;
+    const cands = candidates(ks);
+    if (!cands.length) return;
+    let best = null, bestP = 2;
+    cands.forEach(c => {
+      const [a, b] = betaOf(c.key);
+      let p = randBeta(a, b);
+      if (c.key === nLastKey && cands.length > 1) p += 0.5;   // no repetir la misma nota seguida
+      if (p < bestP){ bestP = p; best = c; }
+    });
+    nLastKey = best.key;
+    const opts = [best.name, ...distractors(best, ks)].sort(() => Math.random() - 0.5);
+    nq = Object.assign({}, best, {ks, opts, answered:false, guess:null});
+    clearKeys(); drawNote(); renderNoteOpts();
+    $('nStatus').innerHTML = `<small>${ks ? `Armadura de ${ks.name}. ` : ''}¿Qué nota es?</small>`;
+    renderNoteMap();
+  }
+  function drawNote(){
+    const el = $('nStaff');
+    if (!nq || !window.Vex || !Vex.Flow){ el.innerHTML = ''; return; }
+    try {
+      const VF = Vex.Flow; el.innerHTML = '';
+      const W = 300, H = 150;
+      const r = new VF.Renderer(el, VF.Renderer.Backends.SVG); r.resize(W, H);
+      const c = r.getContext();
+      const ink = cssVar('--ink'), muted = cssVar('--muted');
+      c.setFillStyle(ink); c.setStrokeStyle(ink);
+      const st = new VF.Stave(6, 18, W - 12);
+      st.setStyle({strokeStyle: muted, fillStyle: ink});
+      st.addClef(nq.clef);
+      if (nq.ks) st.addKeySignature(nq.ks.vf);
+      st.setContext(c).draw();
+      const vk = 'cdefgab'[nq.letter] + (nq.ks ? '' : nq.acc > 0 ? '#' : nq.acc < 0 ? 'b' : '') + '/' + nq.oct;
+      const n = new VF.StaveNote({clef: nq.clef, keys: [vk], duration: 'w'});
+      if (!nq.ks && nq.acc) n.addModifier(new VF.Accidental(nq.acc > 0 ? '#' : 'b'), 0);
+      const col = !nq.answered ? ink : cssVar(nq.guess === nq.name ? '--ok' : '--bad');
+      n.setKeyStyle(0, {fillStyle: col, strokeStyle: col});
+      n.setLedgerLineStyle({strokeStyle: ink});
+      const v = new VF.Voice({num_beats: 4, beat_value: 4}).addTickables([n]);
+      new VF.Formatter().joinVoices([v]).format([v], W - st.getNoteStartX() - 40);
+      v.draw(c, st);
+      if (nq.answered){
+        c.setFont('Figtree, system-ui, sans-serif', 14, 600); c.setFillStyle(ink);
+        const t = nq.name + nq.oct;
+        c.fillText(t, n.getAbsoluteX() + 7 - t.length*3.8, H - 8);
+      }
+      const svg = el.querySelector('svg');
+      if (svg){ svg.setAttribute('viewBox', `0 0 ${W} ${H}`); svg.removeAttribute('width'); svg.removeAttribute('height'); svg.setAttribute('role','img'); svg.setAttribute('aria-label', nq.answered ? `Nota ${nq.name}${nq.oct}` : 'Nota a identificar'); }
+    } catch(e){ el.textContent = ''; }
+  }
+  function renderNoteOpts(){
+    const box = $('nOpts'); box.innerHTML = '';
+    nq.opts.forEach((name, i) => {
+      const b = document.createElement('button');
+      b.className = 'nopt'; b.dataset.name = name;
+      b.innerHTML = `<kbd>${i+1}</kbd>${name}`;
+      b.disabled = nq.answered;
+      b.addEventListener('click', () => answerNote(name));
+      box.appendChild(b);
+    });
+  }
+  function answerNote(name){
+    if (!nq || nq.answered) return;
+    audio();
+    const ok = name === nq.name;
+    nq.answered = true; nq.guess = name;
+    updateBeta(nq.key, ok);
+    nScore.total++; if (ok){ nScore.ok++; nScore.streak++; } else nScore.streak = 0;
+    updateNoteScore();
+    document.querySelectorAll('.nopt').forEach(b => {
+      b.disabled = true;
+      if (b.dataset.name === nq.name) b.classList.add('correct');
+      else if (b.dataset.name === name) b.classList.add('wrong');
+    });
+    drawNote();
+    clearKeys(); if (keyEls[nq.midi]) keyEls[nq.midi].classList.add(ok ? 'first' : 'second');
+    tone(nq.midi, ctx.currentTime + 0.03, 1.2);
+    let why = '';
+    if (nq.ks && nq.acc) why = ` ${LETTERS[nq.letter]} lleva ${accSign(nq.acc)} por la armadura de ${nq.ks.name}.`;
+    else if (nq.ks) why = ` En ${nq.ks.name}, ${LETTERS[nq.letter]} no lleva alteración.`;
+    $('nStatus').innerHTML = ok
+      ? `<strong class="ok">¡Bien! ${nq.name}${nq.oct}</strong><small>${why.trim() || '&nbsp;'}</small>`
+      : `<strong class="bad">Era ${nq.name}${nq.oct}</strong><small>Elegiste ${name}.${why}</small>`;
+    renderNoteMap();
+    if (ok) nTimer = setTimeout(() => { if (view === 'notes') newNote(); }, 1300);
+  }
+  function updateNoteScore(){
+    try { localStorage.setItem('intervalos-notas-puntaje', JSON.stringify(nScore)); } catch(e){}
+    $('nOk').textContent = nScore.ok; $('nTotal').textContent = nScore.total; $('nStreak').textContent = nScore.streak;
+  }
+  function renderNoteMap(){
+    const box = $('nMap');
+    // notas de la configuración actual (sin repetir entre armaduras)
+    const seen = new Map();
+    (nAcc === 'key' ? [null, ...KEYSIGS] : [null]).forEach(ks => candidates(ks).forEach(c => seen.set(c.key, c)));
+    const rows = [...seen.values()].filter(c => beta[c.key])
+      .map(c => { const [a, b] = betaOf(c.key); return Object.assign({a, b, n: Math.round(a+b-2)}, c, betaSummary(a, b)); })
+      .sort((x, y) => x.mean - y.mean || x.midi - y.midi);
+    if (!rows.length){ box.innerHTML = '<p class="stats-note">Todavía no respondiste ninguna nota con esta clave y estas alteraciones.</p>'; return; }
+    const more = rows.filter(r => r.mean < 0.75).slice(0, 5);
+    const known = rows.filter(r => r.lo >= 0.6).sort((x,y) => y.lo - x.lo).slice(0, 5);
+    const lbl = r => `${r.name}${r.oct}${settings.clef === 'both' ? (r.clef === 'bass' ? ' (Fa)' : ' (Sol)') : ''}`;
+    const pct = x => Math.round(x*100);
+    let html = `<div class="nlists"><div><h4>Practicá más</h4><p>${more.length ? more.map(lbl).join(', ') : 'Nada urgente.'}</p></div>`
+      + `<div><h4>Ya las sabés</h4><p>${known.length ? known.map(lbl).join(', ') : 'Todavía ninguna con seguridad.'}</p></div></div>`;
+    html += rows.map(r => {
+      const col = `color-mix(in srgb, var(--ok) ${pct(r.mean)}%, var(--bad))`;
+      const tip = `${lbl(r)}: acierto esperado ${pct(r.mean)}%, entre ${pct(r.lo)}% y ${pct(r.hi)}% (Beta(${+r.a.toFixed(1)}, ${+r.b.toFixed(1)}), ${r.n} respuestas)`;
+      return `<div class="brow" title="${tip}"><span class="lab">${lbl(r)}</span><div class="btrack" role="img" aria-label="${tip}"><span class="g" style="left:50%"></span>`
+        + `<span class="brange" style="left:${pct(r.lo)}%;width:${Math.max(1, pct(r.hi) - pct(r.lo))}%"></span>`
+        + `<span class="bdot" style="left:${pct(r.mean)}%;background:${col}"></span></div><span class="val">${pct(r.mean)}%</span></div>`;
+    }).join('');
+    html += '<div class="baxis"><span></span><div><span>0%</span><span>50%</span><span>100%</span></div><span></span></div>';
+    box.innerHTML = html;
+  }
+  document.querySelectorAll('input[name=nacc]').forEach(r => {
+    r.checked = r.value === nAcc;
+    r.addEventListener('change', () => { nAcc = r.value; try { localStorage.setItem('intervalos-notas-alt', nAcc); } catch(e){} nLastKey = null; newNote(); });
+  });
+  $('nNext').addEventListener('click', () => { audio(); newNote(); });
+  $('nPlay').addEventListener('click', () => { if (!nq) return; audio(); stopAll(); tone(nq.midi, ctx.currentTime + 0.03, 1.2); });
+  $('nReset').addEventListener('click', () => { beta = {}; saveBeta(); nScore.ok = nScore.total = nScore.streak = 0; updateNoteScore(); renderNoteMap(); });
+  document.addEventListener('keydown', e => {
+    if (view !== 'notes' || e.ctrlKey || e.metaKey || e.altKey) return;
+    if (/^[1-4]$/.test(e.key) && nq && !nq.answered){ const b = document.querySelectorAll('.nopt')[+e.key - 1]; if (b) answerNote(b.dataset.name); }
+    else if ((e.key === 'Enter' || e.key === ' ') && nq && nq.answered && !(e.target instanceof HTMLButtonElement)){ e.preventDefault(); audio(); newNote(); }
+  });
+  updateNoteScore();
 
   // ---------- Ajustes ----------
   document.querySelectorAll('input[name=clef]').forEach(r=>{
@@ -965,6 +1247,7 @@ legend{font-size:.9rem;color:var(--muted);margin-bottom:8px;padding:0}
       buildKeyboard(); renderAnswers();
       setStatus('<small>Tocá “Nuevo intervalo” o dos teclas.</small>');
       if (view === 'learn' && learnS !== null) showLearn(learnS, true);
+      if (view === 'notes'){ nLastKey = null; newNote(); }
     });
   });
   document.querySelectorAll('input[name=mode]').forEach(r=>{
@@ -1015,7 +1298,7 @@ legend{font-size:.9rem;color:var(--muted);margin-bottom:8px;padding:0}
   initAudio();
   renderChips(); renderAnswers();
   renderSteps();
-  try { if (localStorage.getItem('intervalos-vista') === 'learn') setView('learn'); } catch(e){}
+  try { const v0 = localStorage.getItem('intervalos-vista'); if (v0 === 'learn' || v0 === 'notes') setView(v0); } catch(e){}
 })();
 </script>
 </body>
