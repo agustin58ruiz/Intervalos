@@ -1,0 +1,95 @@
+/* Ritmo: pentagrama rítmico, metrónomo, recuadro para tocar, línea de tiempo y glosario.
+   Usa los tokens de color definidos en oido.css. */
+
+/* Pentagrama rítmico: la figura que suena se ilumina */
+.rit .rit-on path,.rit .rit-on rect{fill:var(--first);stroke:var(--first)}
+.opts:has(.rit-op){grid-template-columns:repeat(auto-fill,minmax(210px,1fr))}
+.rit-op{display:block}
+.rit-op svg{display:block;width:100%;height:auto;margin:0 auto}
+.fb-comp .rit-op svg{max-width:260px;margin:0}
+.arbol-fila{display:grid;grid-template-columns:9.5em minmax(0,1fr);align-items:center;gap:8px}
+.arbol-fila>*{min-width:0}
+.arbol-fila .btn{padding:8px 10px;font-size:.85rem}
+.arbol-fila .lz-pg{margin:0 0 6px}
+@media (max-width:520px){.arbol-fila{grid-template-columns:1fr;gap:0}.arbol-fila .btn{justify-self:start}}
+
+/* Metrónomo */
+.met{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;background:var(--surface);border:1.5px solid var(--line);border-radius:12px;padding:10px 12px;margin:0 0 10px}
+.met .btn{padding:9px 16px;font-size:.9rem}
+.met-bpm{display:flex;align-items:center;gap:8px;font-size:.9rem;font-variant-numeric:tabular-nums}
+.met-bpm input{width:150px;accent-color:var(--ink)}
+.met-term{font-size:.85rem;color:var(--muted)}
+.met-dots{display:flex;align-items:center;gap:8px;margin-left:auto}
+.met-dots span{width:14px;height:14px;border-radius:50%;border:1.5px solid var(--line);background:var(--paper);transition:background-color .08s}
+.met-dots span.a2{width:18px;height:18px}
+.met-dots span.on{background:var(--second);border-color:var(--second)}
+.met-dots span.a2.on{background:var(--first);border-color:var(--first)}
+@media (prefers-reduced-motion: reduce){.met-dots span{transition:none}}
+
+/* Tocar el ritmo */
+.tap{margin:0 0 8px}
+.tap-ctrl{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;margin:0 0 6px}
+.tap-ctrl .btn{flex:0 0 auto;padding:11px 18px}
+.tap-ctrl .chk{margin:0;font-size:.88rem}
+.tap-info{font-size:.88rem;color:var(--muted);margin:0 0 8px}
+kbd{font:600 .82em "Figtree",system-ui,sans-serif;border:1.5px solid var(--line);border-bottom-width:3px;border-radius:6px;padding:0 6px;background:var(--surface);color:var(--ink);white-space:nowrap}
+.tap-pad{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;width:100%;min-height:140px;border:2px dashed var(--line);border-radius:14px;background:var(--surface);color:var(--muted);font:inherit;touch-action:manipulation;user-select:none;-webkit-user-select:none}
+.tap-pad:not(:disabled){border-color:var(--ink);border-style:solid;color:var(--ink);cursor:pointer}
+.tap-pad:disabled{cursor:default}
+.tap-pad:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+.tap-cuenta{font-family:"Young Serif",Georgia,serif;font-size:2.6rem;line-height:1;min-height:1em;color:var(--first)}
+.tap-hint{font-weight:600}
+.tap-pad.hit{animation:golpe .15s ease-out}
+@keyframes golpe{from{background:color-mix(in srgb,var(--second) 30%,var(--surface))}to{background:var(--surface)}}
+@media (prefers-reduced-motion: reduce){.tap-pad.hit{animation:none}}
+
+/* Línea de tiempo: escrito contra toques */
+.lt-box{background:var(--surface);border:1.5px solid var(--line);border-radius:12px;padding:6px 10px;margin:0 0 10px}
+.lt{display:block;width:100%;height:auto}
+.lt-eje{stroke:var(--line);stroke-width:1.5}
+.lt-pulso{stroke:var(--line);stroke-dasharray:3 3}
+.lt-barra{stroke:var(--muted);stroke-width:1.5}
+.lt-lab{font:600 11px "Figtree",system-ui,sans-serif;fill:var(--muted)}
+.lt-une{stroke-width:1.5;opacity:.55}
+.lt-esp{fill:var(--surface);stroke:var(--ink);stroke-width:1.8}
+.lt-esp.falta{stroke:var(--bad);fill:color-mix(in srgb,var(--bad) 18%,var(--surface))}
+.lt-x{stroke:var(--bad);stroke-width:2.2;stroke-linecap:round;fill:none}
+.lt-ley{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:.8rem;color:var(--muted);margin:4px 0 2px}
+.lt-ley span{display:inline-flex;align-items:center;gap:5px}
+.lt-ley span::before{content:"";width:9px;height:9px;border-radius:50%;background:var(--c)}
+.lt-ley span.x::before{content:"✕";width:auto;height:auto;border-radius:0;background:none;color:var(--bad);font-weight:700}
+.lt-ley span.o::before{background:none;border:1.8px solid var(--bad)}
+
+/* Práctica libre */
+.rit-tempo input{width:min(220px,50vw);accent-color:var(--ink)}
+.rit-tempo output{color:var(--ink);font-variant-numeric:tabular-nums}
+.rit-tempo small{color:var(--muted);margin-left:4px}
+
+/* Términos del glosario dentro del texto */
+.gl-t{font:inherit;color:inherit;background:none;border:0;border-radius:0;padding:0;border-bottom:1.5px dotted var(--first);cursor:help;line-height:inherit;text-align:inherit;font-weight:inherit}
+.gl-t:hover{color:var(--first)}
+.gl-t:focus-visible{outline:2px solid var(--focus);outline-offset:2px;border-radius:2px}
+.gl-def{font-size:.92rem;background:color-mix(in srgb,var(--second) 8%,var(--surface));border-left:3px solid var(--second);border-radius:0 8px 8px 0;padding:8px 12px}
+
+/* Glosario */
+.gl-buscar{width:100%;font:inherit;padding:10px 16px;border:1.5px solid var(--line);border-radius:999px;background:var(--surface);color:var(--ink);margin:0 0 10px}
+.gl-buscar:focus-visible{outline:3px solid var(--focus);outline-offset:1px}
+.gl-cats{margin:0 0 4px}
+.gl-item{background:var(--surface);border:1.5px solid var(--line);border-radius:12px;padding:12px 14px;margin:0 0 8px;scroll-margin:80px}
+.gl-item h3{font-family:"Young Serif",Georgia,serif;font-weight:400;font-size:1.2rem;margin:0}
+.gl-item p{margin:0 0 8px}
+.gl-item .lz-pg{margin:4px 0 6px}
+.gl-item .lz-botones{margin:0 0 6px}
+.gl-cat{font-size:.78rem;color:var(--muted)}
+.gl-item p.gl-cat{margin:0 0 6px}
+.gl-ver{font-size:.88rem;color:var(--muted)}
+.gl-item.foco{border-color:var(--first);box-shadow:0 0 0 3px color-mix(in srgb,var(--first) 25%,transparent)}
+
+/* Hoja con la definición (se abre desde las lecciones) */
+.gl-hoja{display:none;position:fixed;inset:auto 12px 12px;box-sizing:border-box;width:min(560px,calc(100% - 24px));max-height:72vh;overflow:auto;margin:0 auto;border:1.5px solid var(--line);border-radius:14px;background:var(--surface);color:var(--ink);padding:14px 16px 4px;box-shadow:0 12px 40px rgba(0,0,0,.28)}
+.gl-hoja.abierta{display:block}
+.gl-hoja:popover-open{display:block}
+.gl-hoja::backdrop{background:rgba(10,13,24,.18)}
+.gl-hoja .gl-item{border:0;padding:0;margin:0;background:none}
+.gl-hoja h3:focus{outline:none}
+.gl-hoja .fb-acc{margin:6px 0 10px}

@@ -423,8 +423,14 @@
 
   // ---------- Índices ----------
   const L = {unidades: U, porId: {}};
-  U.forEach(u => u.lecciones.forEach((l, i) => { L.porId[l.id] = Object.assign(l, {unidad: u}); }));
-  L.orden = U.flatMap(u => u.lecciones);
+  const indexar = () => {
+    U.forEach(u => u.lecciones.forEach(l => { L.porId[l.id] = Object.assign(l, {unidad: u}); }));
+    L.orden = U.flatMap(u => u.lecciones);
+  };
+  indexar();
+  // Para agregar unidades desde otros archivos (lecciones-ritmo.js)
+  L.agregarUnidad = (id, titulo, desc, lecciones) => { unidad(id, titulo, desc, lecciones); indexar(); };
+  L.util = {h, caja, botones, nota, msg};
   L.siguiente = hechas => L.orden.find(l => !hechas(l.id)) || null;
   L.ETAPAS = {aprender: 'Aprender', ejemplo: 'Ver ejemplos', guiado: 'Hacer con ayuda', solo: 'Hacer solo'};
   window.Lecciones = L;

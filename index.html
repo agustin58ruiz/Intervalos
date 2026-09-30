@@ -9,6 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Young+Serif&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/oido.css">
 <link rel="stylesheet" href="css/teoria.css">
+<link rel="stylesheet" href="css/ritmo.css">
 </head>
 <body>
 <main>
@@ -26,11 +27,13 @@
     <button role="tab" id="nav-aprender" aria-controls="sec-aprender" aria-selected="true">Aprender</button>
     <button role="tab" id="nav-practicar" aria-controls="sec-practicar" aria-selected="false">Practicar</button>
     <button role="tab" id="nav-evaluar" aria-controls="sec-evaluar" aria-selected="false">Evaluación</button>
+    <button role="tab" id="nav-ritmo" aria-controls="sec-ritmo" aria-selected="false">Ritmo</button>
     <button role="tab" id="nav-oido" aria-controls="sec-oido" aria-selected="false">Oído</button>
   </nav>
   <section id="sec-aprender" role="tabpanel" aria-labelledby="nav-aprender"></section>
   <section id="sec-practicar" role="tabpanel" aria-labelledby="nav-practicar" hidden></section>
   <section id="sec-evaluar" role="tabpanel" aria-labelledby="nav-evaluar" hidden></section>
+  <section id="sec-ritmo" role="tabpanel" aria-labelledby="nav-ritmo" hidden></section>
   <section id="sec-oido" role="tabpanel" aria-labelledby="nav-oido" hidden>
   <div class="tabs" role="tablist" aria-label="Ejercicios de oído">
     <button role="tab" id="tabPractice" aria-controls="practiceView" aria-selected="true">Adivinar intervalos</button>
@@ -169,6 +172,7 @@
   </div>
   </section>
 </main>
+<div id="glHoja" class="gl-hoja" popover role="dialog" aria-label="Definición"></div>
 
 <script src="js/vendor/vexflow.js"></script>
 <script src="js/muestras-piano.js"></script>
@@ -176,8 +180,13 @@
 <script src="js/teoria/musica.js"></script>
 <script src="js/teoria/visual.js"></script>
 <script src="js/teoria/progreso.js"></script>
+<script src="js/teoria/ritmo.js"></script>
+<script src="js/teoria/ritmo-visual.js"></script>
+<script src="js/teoria/glosario.js"></script>
 <script src="js/teoria/ejercicios.js"></script>
+<script src="js/teoria/ejercicios-ritmo.js"></script>
 <script src="js/teoria/lecciones.js"></script>
+<script src="js/teoria/lecciones-ritmo.js"></script>
 <script src="js/teoria/app.js"></script>
 </body>
 </html>

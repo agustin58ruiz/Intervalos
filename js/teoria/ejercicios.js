@@ -193,7 +193,7 @@
     const t = E.TIPOS[id];
     const q = t.gen(o);
     q.tipo = id; q.hab = q.hab || t.hab;
-    q.parecido = () => E.generar(id, o);
+    q.parecido = q.parecido || (() => E.generar(id, o));
     return q;
   };
 
@@ -492,5 +492,6 @@
   }});
 
   E.analizarPar = E.analizar;
+  E.op = op; E.resultado = resultado; E.tipo = tipo;   // para registrar otros catálogos (ejercicios-ritmo.js)
   window.Ejercicios = E;
 })();

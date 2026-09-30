@@ -27,7 +27,18 @@
     'arm-relativa': {nombre:'Relativas menores',               leccion:'a-relativa',    paso:0, ejercicio:'arm-relativa'},
     'accidentales': {nombre:'Alteraciones accidentales',       leccion:'a-accidentales',paso:0, ejercicio:'arm-altura'},
     'int-armadura': {nombre:'Intervalos con armadura',         leccion:'x-procedimiento',paso:0,ejercicio:'int-armadura'},
-    'oido':         {nombre:'Reconocimiento auditivo',         leccion:'i-que-es',      paso:1, ejercicio:'oido'}
+    'oido':         {nombre:'Reconocimiento auditivo',         leccion:'i-que-es',      paso:1, ejercicio:'oido'},
+    'r-tempo':      {nombre:'Pulso y tempo',                   leccion:'r-pulso',       paso:2, ejercicio:'r-tempo'},
+    'r-figuras':    {nombre:'Figuras rítmicas',                leccion:'r-figuras',     paso:0, ejercicio:'r-figura'},
+    'r-valores':    {nombre:'Valores y equivalencias',         leccion:'r-figuras',     paso:1, ejercicio:'r-equivalencia'},
+    'r-silencios':  {nombre:'Silencios',                       leccion:'r-silencios',   paso:0, ejercicio:'r-silencio'},
+    'r-compas':     {nombre:'Compás y cifra indicadora',       leccion:'r-compas',      paso:1, ejercicio:'r-cifra'},
+    'r-completar':  {nombre:'Completar compases',              leccion:'r-compas',      paso:2, ejercicio:'r-completar'},
+    'r-tocar':      {nombre:'Tocar ritmos',                    leccion:'r-leer',        paso:0, ejercicio:'r-tocar'},
+    'r-dictado':    {nombre:'Dictado rítmico',                 leccion:'r-leer',        paso:4, ejercicio:'r-dictado'},
+    'r-puntillo':   {nombre:'Puntillo y ligadura',             leccion:'r-puntillo',    paso:0, ejercicio:'r-puntillo'},
+    'r-compuesto':  {nombre:'Compases compuestos',             leccion:'r-compuesto',   paso:0, ejercicio:'r-compuesto'},
+    'r-especiales': {nombre:'Síncopa, tresillo y anacrusa',    leccion:'r-especiales',  paso:0, ejercicio:'r-especial'}
   };
 
   // ---------- Diagnósticos de error ----------
@@ -50,7 +61,20 @@
     'teclado':       {hab:'teclado',      msg:'Te cuesta ubicar las notas en el teclado. Repasemos cómo usar los grupos de dos y tres teclas negras como referencia.'},
     'alteraciones':  {hab:'alteraciones', msg:'Los sostenidos y bemoles te están confundiendo. Repasemos: el sostenido sube medio tono y el bemol baja medio tono.'},
     'nombres':       {hab:'nombres',      msg:'El orden de las notas todavía se mezcla. Repasemos la secuencia Do Re Mi Fa Sol La Si.'},
-    'oido':          {hab:'oido',         msg:'El reconocimiento auditivo te está costando. Conviene escuchar varias veces cada intervalo y compararlo con los vecinos.'}
+    'oido':          {hab:'oido',         msg:'El reconocimiento auditivo te está costando. Conviene escuchar varias veces cada intervalo y compararlo con los vecinos.'},
+    'r-figura':      {hab:'r-figuras',    msg:'Las figuras todavía se confunden. Mirá tres cosas, en este orden: si la cabeza es hueca o rellena, si tiene plica y cuántos corchetes tiene.'},
+    'r-valor':       {hab:'r-valores',    msg:'Las duraciones de las figuras todavía no están firmes. Repasemos la regla: cada figura dura la mitad que la anterior (redonda 4, blanca 2, negra 1, corchea ½, semicorchea ¼).'},
+    'r-silencio':    {hab:'r-silencios',  msg:'Los silencios se están mezclando. Repasemos: el de redonda cuelga, el de blanca se apoya, el de negra es un zigzag y el de corchea tiene un gancho.'},
+    'r-compas':      {hab:'r-compas',     msg:'La cifra indicadora te está costando. El número de arriba dice cuántos tiempos tiene el compás; el de abajo, qué figura vale un tiempo (4 = negra).'},
+    'r-completar':   {hab:'r-completar',  msg:'Al completar compases, la suma no te está dando. Sumá el valor de cada figura escrita y restalo del total del compás.'},
+    'r-puntillo':    {hab:'r-puntillo',   msg:'El puntillo y la ligadura te están costando. El puntillo suma la mitad del valor de la figura (no un tiempo entero); la ligadura suma las dos duraciones.'},
+    'r-compuesto':   {hab:'r-compuesto',  msg:'Los compases compuestos todavía confunden. En 6/8, 9/8 y 12/8 el pulso es la negra con puntillo y se divide en tres corcheas: 6/8 tiene 2 pulsos, no 6.'},
+    'r-tempo':       {hab:'r-tempo',      msg:'Los términos de tempo se mezclan. Ordenalos de lento a rápido: Largo, Adagio, Andante, Moderato, Allegro, Presto.'},
+    'r-especial':    {hab:'r-especiales', msg:'Síncopa, contratiempo, tresillo y anacrusa todavía se confunden. La clave: la síncopa se prolonga sobre la parte fuerte; el contratiempo viene después de un silencio y no se prolonga.'},
+    'r-dictado':     {hab:'r-dictado',    msg:'El dictado rítmico te está costando. Contá el pulso en voz baja mientras escuchás y fijate en qué tiempos hay más de un sonido.'},
+    'r-tocar':       {hab:'r-tocar',      msg:'Al tocar ritmos, algunas notas no caen en su lugar. Contá en voz alta mientras tocás y, si hace falta, bajá el tempo.'},
+    'r-tocar-silencio': {hab:'r-silencios', msg:'Estás tocando donde hay silencios. El silencio se cuenta pero no se toca: decí el número en voz baja y no marques.'},
+    'r-tocar-largas':   {hab:'r-puntillo',  msg:'Estás tocando de más en las notas largas o ligadas. Una nota larga (o dos ligadas) se toca una sola vez y se mantiene mientras contás.'}
   };
 
   // ---------- Beta ----------
@@ -123,7 +147,7 @@
 
   P.reiniciar = () => {
     beta = {}; errores = []; lecciones = {};
-    ['teoria-habilidades','teoria-errores','teoria-lecciones','teoria-evaluaciones'].forEach(k => { try { localStorage.removeItem(k); } catch(e){} });
+    ['teoria-habilidades','teoria-errores','teoria-lecciones','teoria-evaluaciones','ritmo-puntaje'].forEach(k => { try { localStorage.removeItem(k); } catch(e){} });
   };
 
   window.Progreso = P;

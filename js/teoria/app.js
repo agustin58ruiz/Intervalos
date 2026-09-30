@@ -1,7 +1,7 @@
 // Interfaz del aula: navegación, reproductor de lecciones, ejercicios con
 // corrección explicada, práctica adaptativa y evaluación.
 (function(){
-  const M = window.Musica, V = window.Visual, E = window.Ejercicios, P = window.Progreso, L = window.Lecciones;
+  const M = window.Musica, V = window.Visual, E = window.Ejercicios, P = window.Progreso, L = window.Lecciones, R = window.Ritmo, G = window.Glosario;
   const $ = id => document.getElementById(id);
   const h = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html !== undefined) e.innerHTML = html; return e; };
   const boton = (texto, cls, fn) => { const b = h('button', 'btn ' + (cls || 'secondary'), texto); b.type = 'button'; if (fn) b.addEventListener('click', fn); return b; };
@@ -16,7 +16,16 @@
     'pent-teclado': 'Ubicá primero el Do central (primera línea adicional debajo del pentagrama) y contá teclas blancas desde ahí.',
     'arm-altura': 'Fijate si la letra de la nota aparece en la armadura. Después, si la nota tiene una alteración escrita delante: esa manda.',
     'arm-tonalidad': 'Con sostenidos: el último sostenido + medio tono. Con bemoles: el penúltimo bemol. Un bemol solo: Fa mayor.',
-    'int-construir': 'Primero contá las letras para saber qué letra va; después ajustá la alteración según los semitonos.'
+    'int-construir': 'Primero contá las letras para saber qué letra va; después ajustá la alteración según los semitonos.',
+    'r-tempo': 'De lento a rápido: Largo, Adagio, Andante, Moderato, Allegro, Presto.',
+    'r-equivalencia': 'Cada figura dura la mitad que la anterior: redonda, blanca, negra, corchea, semicorchea.',
+    'r-completar': 'Sumá lo que ya está escrito y restalo del total del compás (el número de arriba de la cifra).',
+    'r-cifra': 'Sumá las figuras que hay entre dos barras de compás.',
+    'r-puntillo': 'El puntillo suma la mitad del valor de la figura; la ligadura suma las dos duraciones.',
+    'r-compuesto': 'En 6/8, 9/8 y 12/8 el pulso es la negra con puntillo: dividí el número de arriba por 3.',
+    'r-especial': 'Síncopa: se prolonga sobre la parte fuerte. Contratiempo: viene después de un silencio. Tresillo: tres en el lugar de dos. Anacrusa: notas antes de la primera barra.',
+    'r-dictado': 'Contá el pulso durante la cuenta previa y seguí contando mientras suena: fijate en qué pulsos hay más de un sonido.',
+    'r-tocar': 'Contá en voz alta. Tocá al comienzo de cada figura: en las notas largas, un solo toque; en los silencios, nada.'
   };
   const CALIDADES_UI = [['d','disminuida'],['m','menor'],['J','justa'],['M','mayor'],['A','aumentada']];
 
@@ -89,6 +98,7 @@
       }
       const acciones = h('div', 'fb-acc');
       if (res.comparar) acciones.appendChild(boton('▶ Escuchar la diferencia', 'secondary', res.comparar));
+      (res.acciones || []).forEach(([t, fn]) => acciones.appendChild(boton(t, 'secondary', fn)));
       if (q.escuchar && !q.auditivo) acciones.appendChild(boton('▶ Escuchar', 'secondary', () => q.escuchar()));
       if (op.alSiguiente) acciones.appendChild(boton(res.ok ? 'Siguiente' : 'Probar uno parecido', 'primary', () => op.alSiguiente(res)));
       fb.appendChild(acciones);
@@ -115,6 +125,9 @@
       } else if (q.modo === 'teclado'){
         tk.hidden = false;
         kb = V.teclado(tk, Object.assign({}, q.teclado, {onTecla: m => responder(m)}));
+      } else if (q.modo === 'propio'){
+        // El ejercicio arma su propia forma de responder (por ejemplo, tocar un ritmo)
+        q.montar(resp, responder, {modo: op.modo, vis});
       }
       if (op.modo === 'evaluacion' || op.permitirNoSe){ const s = boton('No sé', 'mini', () => responder('__nose')); resp.appendChild(s); }
     }
@@ -214,7 +227,7 @@
   // ======================================================================
   // Navegación
   // ======================================================================
-  const SECCIONES = ['aprender', 'practicar', 'evaluar', 'oido'];
+  const SECCIONES = ['aprender', 'practicar', 'evaluar', 'ritmo', 'oido'];
   let seccion = 'aprender';
   function ir(s, opts = {}){
     seccion = s;
@@ -227,6 +240,7 @@
     if (s === 'aprender' && !opts.sinRender) indiceAprender();
     if (s === 'practicar' && !opts.sinRender) hubPracticar();
     if (s === 'evaluar' && !opts.sinRender) introEvaluacion();
+    if (s === 'ritmo' && !opts.sinRender) hubRitmo();
     if (!opts.sinScroll) window.scrollTo({top: 0});
   }
   SECCIONES.forEach(x => $('nav-' + x).addEventListener('click', () => ir(x)));
@@ -374,7 +388,8 @@
     }));
     s.appendChild(card);
     L.unidades.forEach(u => {
-      const tipos = Object.values(E.TIPOS).filter(t => L.porId[t.leccion] && L.porId[t.leccion].unidad === u);
+      const tipos = Object.values(E.TIPOS).filter(t => L.porId[t.leccion] && L.porId[t.leccion].unidad === u)
+        .sort((a, b) => L.orden.indexOf(L.porId[a.leccion]) - L.orden.indexOf(L.porId[b.leccion]));
       if (!tipos.length) return;
       const sec = h('section', 'unidad');
       sec.appendChild(h('h2', null, u.titulo));
@@ -435,16 +450,47 @@
     ['int-armadura', 'Intervalos con armadura'], ['int-armadura', 'Intervalos con armadura'], ['int-armadura', 'Intervalos con armadura'],
     ['oido', 'Reconocimiento auditivo']
   ];
+  const PLAN_RITMO = [
+    ['r-tempo', 'Pulso y tempo'],
+    ['r-figura', 'Figuras y silencios', {valor: false}], ['r-silencio', 'Figuras y silencios'], ['r-equivalencia', 'Figuras y silencios'],
+    ['r-cifra', 'Compás'], ['r-completar', 'Compás'], ['r-completar', 'Compás'],
+    ['r-puntillo', 'Puntillo y ligadura'], ['r-puntillo', 'Puntillo y ligadura'],
+    ['r-compuesto', 'Compases compuestos'],
+    ['r-especial', 'Síncopa, tresillo y anacrusa'],
+    ['r-dictado', 'Dictado rítmico'], ['r-dictado', 'Dictado rítmico']
+  ];
+  // Qué evaluar: las evaluaciones anteriores a la unidad de ritmo eran todas de notas e intervalos
+  const ALCANCES = {
+    todo:    {nombre: 'Todo', plan: () => [...PLAN, ...[0, 2, 4, 5, 7, 9, 10, 11].map(i => PLAN_RITMO[i])], unidades: null,
+              desc: 'Combina lectura de notas, intervalos, armaduras, tonalidades, reconocimiento auditivo y ritmo (figuras, compás, puntillo, compases compuestos, síncopa y dictado).'},
+    alturas: {nombre: 'Notas e intervalos', plan: () => PLAN, unidades: u => u.id !== 'ritmo',
+              desc: 'Combina lectura de notas, intervalos (identificar y construir), armaduras, tonalidades, alteraciones accidentales, intervalos con armadura y reconocimiento auditivo.'},
+    ritmo:   {nombre: 'Ritmo', plan: () => PLAN_RITMO, unidades: u => u.id === 'ritmo',
+              desc: 'Combina tempo, figuras y silencios, equivalencias, cifra indicadora, completar compases, puntillo y ligadura, compases compuestos, síncopa y tresillos, y dictado rítmico.'}
+  };
+  let alcance = P.evaluaciones().length ? 'alturas' : 'todo';   // quien ya tenía evaluaciones ve primero su historial
+  try { const a = localStorage.getItem('teoria-alcance'); if (ALCANCES[a]) alcance = a; } catch(e){}
+  const deAlcance = evs => evs.filter(e => (e.alcance || 'alturas') === alcance);
   const fmtT = s => `${Math.floor(s/60)}:${String(s % 60).padStart(2, '0')}`;
   function introEvaluacion(){
     const s = $('sec-evaluar'); s.innerHTML = '';
-    const hechas = L.orden.filter(l => P.leccionHecha(l.id)).length;
-    const evs = P.evaluaciones();
+    const A = ALCANCES[alcance], plan = A.plan();
+    const lecs = L.unidades.filter(u => !A.unidades || A.unidades(u)).flatMap(u => u.lecciones);
+    const hechas = lecs.filter(l => P.leccionHecha(l.id)).length;
+    const evs = deAlcance(P.evaluaciones());
     s.appendChild(h('p', 'lede', 'Una evaluación sin ayudas para detectar qué conceptos están firmes y cuáles conviene seguir estudiando. Las explicaciones aparecen recién al final.'));
+    const sel = h('div', 'clefbar', '<span>Qué evaluar</span>');
+    const seg = h('div', 'seg');
+    Object.entries(ALCANCES).forEach(([id, a]) => {
+      const l = h('label', null, `<input type="radio" name="alcance" value="${id}"${id === alcance ? ' checked' : ''}><span>${a.nombre}</span>`);
+      l.querySelector('input').addEventListener('change', () => { alcance = id; try { localStorage.setItem('teoria-alcance', id); } catch(e){} introEvaluacion(); });
+      seg.appendChild(l);
+    });
+    sel.appendChild(seg); s.appendChild(sel);
     const c = h('div', 'continuar');
-    c.innerHTML = `<p class="kicker">${PLAN.length} preguntas · unos 10 minutos</p><h2>Evaluación general</h2>
-      <p>Combina lectura de notas, intervalos (identificar y construir), armaduras, tonalidades, alteraciones accidentales, intervalos con armadura y reconocimiento auditivo. Si no sabés una respuesta, elegí “No sé”: sirve más que adivinar.</p>
-      ${hechas < L.orden.length ? `<p class="aviso">Completaste ${hechas} de ${L.orden.length} lecciones. Podés hacer la evaluación igual; los temas que no viste probablemente aparezcan como pendientes.</p>` : ''}`;
+    c.innerHTML = `<p class="kicker">${plan.length} preguntas · unos ${Math.max(5, Math.round(plan.length*0.55))} minutos</p><h2>Evaluación ${alcance === 'todo' ? 'general' : 'de ' + A.nombre.toLowerCase()}</h2>
+      <p>${A.desc} Si no sabés una respuesta, elegí “No sé”: sirve más que adivinar.</p>
+      ${hechas < lecs.length ? `<p class="aviso">Completaste ${hechas} de ${lecs.length} lecciones de estos temas. Podés hacer la evaluación igual; los temas que no viste probablemente aparezcan como pendientes.</p>` : ''}`;
     c.appendChild(boton('Empezar la evaluación', 'primary', correrEvaluacion));
     s.appendChild(c);
     if (evs.length) s.appendChild(historial(evs));
@@ -458,7 +504,7 @@
   }
   function correrEvaluacion(){
     const s = $('sec-evaluar'); s.innerHTML = '';
-    const plan = M.mezclar(PLAN);
+    const plan = M.mezclar(ALCANCES[alcance].plan());
     const box = h('div', 'sesion'); s.appendChild(box);
     const t0 = Date.now();
     let tick = setInterval(() => { const r = $('reloj'); if (r) r.textContent = fmtT(Math.round((Date.now() - t0)/1000)); else clearInterval(tick); }, 1000);
@@ -478,9 +524,9 @@
       res.habs.forEach(([id, ok]) => P.registrar(id, ok));
       if (!res.ok && res.diag) diags[res.diag] = (diags[res.diag] || 0) + 1;
     });
-    const evs = P.evaluaciones();
+    const evs = deAlcance(P.evaluaciones());
     const prev = evs[evs.length - 1];
-    P.guardarEvaluacion({fecha: Date.now(), pct: porc, seg: r.seg, conceptos});
+    P.guardarEvaluacion({fecha: Date.now(), pct: porc, seg: r.seg, conceptos, alcance});
     const dominados = Object.entries(conceptos).filter(([, [ok, n]]) => ok === n);
     const conError = Object.entries(conceptos).filter(([, [ok, n]]) => ok < n).sort((a, b) => a[1][0]/a[1][1] - b[1][0]/b[1][1]);
     const delta = prev ? porc - prev.pct : null;
@@ -518,7 +564,7 @@
       });
       s.appendChild(rec);
     }
-    s.appendChild(historial(P.evaluaciones(), true));
+    s.appendChild(historial(deAlcance(P.evaluaciones()), true));
     const rev = h('section', 'unidad');
     rev.appendChild(h('h2', null, 'Revisión de las respuestas'));
     r.resultados.forEach(({q, res}, i) => {
@@ -543,6 +589,154 @@
   }
 
   // ======================================================================
+  // Ritmo: práctica libre (tocar y dictado) y glosario
+  // ======================================================================
+  const leerLS = (k, def) => { try { const v = JSON.parse(localStorage.getItem(k)); return v ? Object.assign({}, def, v) : def; } catch(e){ return def; } };
+  const guardarLS = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch(e){} };
+  const RC = leerLS('ritmo-config', {vista: 'tocar', compas: '4/4', nivel: 2, bpm: 76, compases: 1, metronomo: true});
+  const VISTAS_RITMO = [['tocar', 'Tocar el ritmo'], ['dictado', 'Dictado rítmico'], ['glosario', 'Glosario']];
+  function hubRitmo(foco){
+    const s = $('sec-ritmo'); s.innerHTML = '';
+    const tabs = h('div', 'tabs'); tabs.setAttribute('role', 'tablist'); tabs.setAttribute('aria-label', 'Ritmo');
+    VISTAS_RITMO.forEach(([id, t]) => {
+      const b = h('button', null, t); b.type = 'button'; b.setAttribute('role', 'tab'); b.setAttribute('aria-selected', String(RC.vista === id));
+      b.addEventListener('click', () => { RC.vista = id; guardarLS('ritmo-config', RC); Sonido.parar(); hubRitmo(); });
+      tabs.appendChild(b);
+    });
+    s.appendChild(tabs);
+    s.appendChild(h('p', 'lede', RC.vista === 'glosario'
+      ? 'Las definiciones de ritmo, con ejemplos para ver y escuchar. En las lecciones, los términos subrayados abren su definición.'
+      : RC.vista === 'tocar' ? 'Leé el ritmo y tocalo con la barra espaciadora o en la pantalla. Después ves dónde cayó cada toque. Para aprender los temas paso a paso, andá a la unidad «Ritmo» de Aprender.'
+      : 'Escuchá un ritmo y elegí cómo está escrito. Para aprender los temas paso a paso, andá a la unidad «Ritmo» de Aprender.'));
+    const cuerpo = h('div'); s.appendChild(cuerpo);
+    if (RC.vista === 'glosario') glosario(cuerpo, foco); else practicaRitmo(cuerpo, RC.vista);
+  }
+  function practicaRitmo(el, modo){
+    const RP = leerLS('ritmo-puntaje', {});
+    const pts = RP[modo] || (RP[modo] = {ok: 0, total: 0, racha: 0});
+    const barra = (titulo, nombre, items, valor, fn) => {
+      const d = h('div', 'clefbar', `<span>${titulo}</span>`), seg = h('div', 'seg');
+      items.forEach(([v, t]) => {
+        const l = h('label', null, `<input type="radio" name="${nombre}" value="${v}"${String(v) === String(valor) ? ' checked' : ''}><span>${t}</span>`);
+        l.querySelector('input').addEventListener('change', () => fn(v));
+        seg.appendChild(l);
+      });
+      d.appendChild(seg); el.appendChild(d);
+    };
+    const cambiar = (k, v) => { RC[k] = v; guardarLS('ritmo-config', RC); nueva(); };
+    barra('Compás', 'rcompas', [['2/4', '2/4'], ['3/4', '3/4'], ['4/4', '4/4'], ['6/8', '6/8'], ['mezcla', 'Mezcla']], RC.compas, v => cambiar('compas', v));
+    barra('Nivel', 'rnivel', [[1, 'Negras y blancas'], [2, '+ Corcheas'], [3, '+ Puntillo y semicorcheas'], [4, '+ Síncopa y tresillos']], RC.nivel, v => cambiar('nivel', v));
+    barra('Largo', 'rlargo', [[1, '1 compás'], [2, '2 compases']], RC.compases, v => cambiar('compases', v));
+    const tb = h('div', 'clefbar rit-tempo', '<span>Tempo</span>');
+    const rng = h('input'); rng.type = 'range'; rng.min = 40; rng.max = 140; rng.step = 2; rng.value = RC.bpm; rng.setAttribute('aria-label', 'Tempo en negras por minuto');
+    const out = h('output');
+    const rotular = () => { out.innerHTML = `♩ = ${rng.value} <small>${R.tempoDe(+rng.value).nombre}${RC.compas === '6/8' || RC.compas === 'mezcla' ? ` · en 6/8, ♩. = ${Math.round(rng.value*2/3)}` : ''}</small>`; };
+    rng.addEventListener('input', rotular);
+    rng.addEventListener('change', () => cambiar('bpm', +rng.value));
+    tb.append(rng, out); el.appendChild(tb); rotular();
+    if (modo === 'dictado'){   // al tocar, el interruptor está junto al recuadro
+      const met = h('label', 'chk', `<input type="checkbox"${RC.metronomo ? ' checked' : ''}> <span>Clic del metrónomo mientras suena el ritmo</span>`);
+      met.querySelector('input').addEventListener('change', e => cambiar('metronomo', e.target.checked));
+      el.appendChild(met);
+    }
+    const box = h('div', 'sesion'); el.appendChild(box);
+    const marcador = h('div', 'score'); el.appendChild(marcador);
+    const pintar = () => { marcador.innerHTML = `<div><b>${pts.ok}</b> aciertos de <b>${pts.total}</b></div><div>Racha: <b>${pts.racha}</b></div>`; };
+    let primera = true;
+    function nueva(parecido){
+      Sonido.parar();
+      const q = parecido || E.generar(modo === 'tocar' ? 'r-tocar' : 'r-dictado', {compas: RC.compas, lista: ['2/4', '3/4', '4/4', '6/8'],
+        nivel: +RC.nivel, nCompases: +RC.compases, bpm: RC.bpm, metronomo: RC.metronomo,
+        alCambiarMetronomo: v => { RC.metronomo = v; guardarLS('ritmo-config', RC); }});
+      if (primera){ q.autoEscuchar = false; primera = false; }   // el primer dictado no suena solo al abrir la pestaña
+      pregunta(box, q, {modo: 'practica',
+        alResponder(qq, res){
+          pts.total++; if (res.ok){ pts.ok++; pts.racha++; } else pts.racha = 0;
+          guardarLS('ritmo-puntaje', RP); pintar();
+          res.habs.forEach(([id, ok]) => P.registrar(id, ok));
+          P.anotarResultado(res.diag, res.ok);
+        },
+        alSiguiente(res){ nueva(res && !res.ok ? q.parecido() : null); }});
+    }
+    pintar(); nueva();
+  }
+
+  // ---------- Glosario ----------
+  const CATEGORIA = Object.fromEntries(G.CATEGORIAS);
+  function fichaGlosario(x, enHoja){
+    const a = h('article', 'gl-item');
+    if (!enHoja) a.id = 'gl-' + x.id;
+    a.innerHTML = `<h3>${x.t}</h3><p class="gl-cat">${CATEGORIA[x.cat]}${x.alias ? ` · también: ${x.alias.join(', ')}` : ''}</p><p>${x.def}</p>`;
+    if (x.ej){
+      const p = R.patron(x.ej.compas, x.ej.ritmo, {anacrusa: x.ej.anacrusa});
+      const st = h('div', 'lz-pg'); a.appendChild(st);
+      const vista = V.ritmo(st, p, {cifra: x.ej.cifra, libre: x.ej.libre, conteo: !x.ej.libre});
+      const acc = h('div', 'lz-botones');
+      acc.appendChild(boton('▶ Escuchar', 'secondary', () => V.tocarRitmo(p, {bpm: 76, metronomo: true, vista})));
+      a.appendChild(acc);
+    }
+    if (x.ver) a.appendChild(h('p', 'gl-ver', `Ver también: ${x.ver.map(id => G.t(id, G.porId[id].t)).join(', ')}`));
+    return a;
+  }
+  function glosario(el, foco){
+    let cat = '';
+    const buscar = h('input', 'gl-buscar'); buscar.type = 'search';
+    buscar.placeholder = 'Buscar: puntillo, síncopa, 6/8…'; buscar.setAttribute('aria-label', 'Buscar en el glosario');
+    el.appendChild(buscar);
+    const seg = h('div', 'seg gl-cats');
+    [['', 'Todas'], ...G.CATEGORIAS].forEach(([id, t]) => {
+      const l = h('label', null, `<input type="radio" name="glcat" value="${id}"${id === cat ? ' checked' : ''}><span>${t}</span>`);
+      l.querySelector('input').addEventListener('change', () => { cat = id; pintar(); });
+      seg.appendChild(l);
+    });
+    el.appendChild(seg);
+    const cuenta = h('p', 'stats-note'); el.appendChild(cuenta);
+    const lista = h('div', 'gl-lista'); el.appendChild(lista);
+    function pintar(){
+      const items = G.buscar(buscar.value, cat);
+      cuenta.textContent = `${M.plural(items.length, 'término')}`;
+      lista.innerHTML = items.length ? '' : '<p class="stats-note">No hay términos que coincidan con la búsqueda.</p>';
+      items.forEach(x => lista.appendChild(fichaGlosario(x)));
+    }
+    buscar.addEventListener('input', pintar);
+    pintar();
+    if (foco) resaltarTermino(foco);
+  }
+  function resaltarTermino(id){
+    const f = document.getElementById('gl-' + id);
+    if (!f) return;
+    document.querySelectorAll('.gl-item.foco').forEach(x => x.classList.remove('foco'));
+    f.classList.add('foco');
+    f.scrollIntoView({block: 'center', behavior: 'smooth'});
+  }
+  function abrirGlosario(id){
+    RC.vista = 'glosario'; guardarLS('ritmo-config', RC);
+    ir('ritmo', {sinRender: true});
+    hubRitmo(id);
+  }
+
+  // Hoja con la definición: la abre cualquier término marcado con G.t(), en lecciones o ejercicios
+  const hoja = $('glHoja');
+  const cerrarHoja = () => { if (hoja.hidePopover){ try { hoja.hidePopover(); } catch(e){} } else hoja.classList.remove('abierta'); };
+  document.addEventListener('click', e => {
+    const b = e.target.closest('.gl-t');
+    if (!b) return;
+    e.preventDefault();
+    const x = G.porId[b.dataset.g];
+    if (!x) return;
+    // Dentro del glosario, el término lleva directo a su ficha
+    if ($('sec-ritmo').contains(b) && document.getElementById('gl-' + x.id)){ resaltarTermino(x.id); return; }
+    hoja.innerHTML = '';
+    hoja.appendChild(fichaGlosario(x, true));
+    const acc = h('div', 'fb-acc');
+    acc.appendChild(boton('Ver en el glosario', 'secondary', () => { cerrarHoja(); abrirGlosario(x.id); }));
+    acc.appendChild(boton('Cerrar', 'mini', cerrarHoja));
+    hoja.appendChild(acc);
+    if (hoja.showPopover){ try { hoja.showPopover(); } catch(err){} } else hoja.classList.add('abierta');
+    const t = hoja.querySelector('h3'); if (t){ t.tabIndex = -1; t.focus({preventScroll: true}); }
+  });
+
+  // ======================================================================
   // Ajustes: sistema de nombres
   // ======================================================================
   const sel = $('nombresSel');
@@ -558,5 +752,5 @@
   try { const g = localStorage.getItem('teoria-seccion'); if (SECCIONES.includes(g)) inicial = g; } catch(e){}
   ir(inicial, {sinScroll: true});
 
-  window.Aula = {ir, abrirLeccion, practicarTipo};
+  window.Aula = {ir, abrirLeccion, practicarTipo, abrirGlosario};
 })();

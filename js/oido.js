@@ -112,6 +112,42 @@
     src.connect(g); g.connect(master);
     src.start(when); src.stop(when+ring+0.05); track(src,g);
   }
+  // Nota que dura exactamente dur segundos (para ritmos: los silencios tienen que oírse)
+  function held(midi, when, dur){
+    const keys = Object.keys(buffers).map(Number);
+    const fin = when + Math.max(dur, 0.08);
+    if (!keys.length){ synth(midi, when, Math.max(dur, 0.12)); return; }
+    const sm = keys.reduce((a,b)=>Math.abs(b-midi)<Math.abs(a-midi)?b:a);
+    const src = ctx.createBufferSource(), g = ctx.createGain();
+    src.buffer = buffers[sm];
+    src.playbackRate.value = Math.pow(2,(midi-sm)/12);
+    g.gain.setValueAtTime(1.6, when);
+    g.gain.setValueAtTime(1.6, fin - 0.04);
+    g.gain.exponentialRampToValueAtTime(0.001, fin + 0.03);
+    src.connect(g); g.connect(master);
+    src.start(when); src.stop(fin + 0.06); track(src,g);
+  }
+  // Clic de metrónomo: más agudo en el primer tiempo del compás
+  function click(when, strong, vol = 1){
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = 'triangle';
+    o.frequency.value = strong ? 1760 : 1175;
+    g.gain.setValueAtTime(0, when);
+    g.gain.linearRampToValueAtTime((strong ? 0.9 : 0.6)*vol, when+0.002);
+    g.gain.exponentialRampToValueAtTime(0.001, when+0.06);
+    o.connect(g); g.connect(master); o.start(when); o.stop(when+0.08); track(o,g);
+  }
+  // Golpe corto de madera para devolver cada toque
+  function knock(when){
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = 'sine';
+    o.frequency.setValueAtTime(820, when);
+    o.frequency.exponentialRampToValueAtTime(420, when+0.05);
+    g.gain.setValueAtTime(0, when);
+    g.gain.linearRampToValueAtTime(0.7, when+0.002);
+    g.gain.exponentialRampToValueAtTime(0.001, when+0.09);
+    o.connect(g); g.connect(master); o.start(when); o.stop(when+0.1); track(o,g);
+  }
   let playTimer = null;
   function playInterval(a, b, harmonic, reps){
     audio();
@@ -956,7 +992,18 @@
     intervalo(a, b, armonico = false, veces = 1){ return playInterval(a, b, armonico, veces); },
     secuencia(ms, paso = 0.55){ audio(); stopAll(); const t = ctx.currentTime + 0.05; ms.forEach((m, i) => tone(m, t + i*paso, paso + 0.5)); return ms.length*paso*1000; },
     acorde(ms){ audio(); stopAll(); const t = ctx.currentTime + 0.05; ms.forEach(m => tone(m, t, 1.6)); },
-    parar(){ stopAll(); }
+    parar(){ stopAll(); },
+    // Para ritmos: todo se programa en el reloj del audio (segundos)
+    ahora(){ audio(); return ctx.currentTime; },
+    nota(m, cuando, dur){ audio(); held(m, cuando, dur); },
+    clic(cuando, fuerte, vol){ audio(); click(cuando, fuerte, vol); },
+    golpe(){ audio(); knock(ctx.currentTime); },
+    // Momento (en el reloj de performance.now(), ms) en que se oye un instante del reloj del audio
+    aMs(t){
+      audio();
+      if (ctx.getOutputTimestamp){ const ts = ctx.getOutputTimestamp(); if (ts.performanceTime) return ts.performanceTime + (t - ts.contextTime)*1000; }
+      return performance.now() + (t - ctx.currentTime + (ctx.outputLatency || 0) + (ctx.baseLatency || 0))*1000;
+    }
   };
   window.Oido = { setView: v => setView(v), vista: () => view };
   try { const v0 = localStorage.getItem('intervalos-vista'); if (v0 === 'learn' || v0 === 'notes') setView(v0); } catch(e){}

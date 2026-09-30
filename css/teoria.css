@@ -100,6 +100,7 @@
 .eq{border-collapse:collapse;margin:6px 0 10px}
 .eq td{border:1px solid var(--line);padding:5px 9px;text-align:center;background:var(--surface)}
 .eq td.on{background:color-mix(in srgb,var(--first) 18%,var(--surface));font-weight:700}
+@media (max-width:480px){.eq td{padding:5px 5px;font-size:.84rem}}
 .escalera{margin:0 0 6px}
 .esc-t{margin:10px 0 6px;font-size:.88rem;color:var(--muted)}
 .esc{display:flex;gap:6px}

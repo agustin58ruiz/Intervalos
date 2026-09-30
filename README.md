@@ -6,13 +6,18 @@ Publicada en GitHub Pages: https://agustin58ruiz.github.io/Intervalos/
 
 ## Secciones
 
-- **Aprender**: cuatro unidades con lecciones paso a paso.
+- **Aprender**: cinco unidades con lecciones paso a paso.
   1. *Las notas*: nombres, notación anglosajona, teclado, tonos y semitonos, sostenidos/bemoles/becuadros, claves de Sol y de Fa, relación pentagrama-teclado.
   2. *Intervalos*: qué es un intervalo, cómo se obtiene el número (contando letras) y la calidad (contando semitonos): mayores, menores, justos, aumentados y disminuidos; construir intervalos.
   3. *Armaduras y tonalidades*: qué es una armadura, alteraciones accidentales, orden de ♯ y ♭, cómo reconocer la tonalidad, relativas menores y el círculo de quintas.
   4. *Intervalos con armadura*: el procedimiento completo en siete pasos.
+  5. *Ritmo*: pulso, tempo y acento; figuras y sus valores; silencios; compás y cifra indicadora; contar, tocar y escuchar ritmos; puntillo y ligadura; compases compuestos (6/8, 9/8, 12/8); tresillo, síncopa, contratiempo y anacrusa. Los términos subrayados abren su definición del glosario.
 - **Practicar**: ejercicios por tema o una práctica recomendada adaptativa. Cada error muestra la respuesta correcta, el procedimiento, dónde estuvo probablemente el error y un ejercicio parecido.
-- **Evaluación**: 18 preguntas sin ayudas (lectura, intervalos, construcción, armaduras, tonalidades, alteraciones, intervalos con armadura y oído). Al final muestra el porcentaje, el tiempo, los conceptos dominados y con errores, y la evolución respecto de evaluaciones anteriores.
+- **Evaluación**: preguntas sin ayudas sobre todo, sobre notas e intervalos (18: lectura, intervalos, construcción, armaduras, tonalidades, alteraciones, intervalos con armadura y oído) o sobre ritmo (13: tempo, figuras, silencios, compás, puntillo, compases compuestos, síncopa y dictado). Al final muestra el porcentaje, el tiempo, los conceptos dominados y con errores, y la evolución respecto de evaluaciones anteriores.
+- **Ritmo**: práctica libre eligiendo compás, nivel, tempo y largo.
+  - *Tocar el ritmo*: después de un compás de cuenta, se toca el ritmo escrito con la barra espaciadora o en la pantalla; una línea de tiempo muestra dónde cayó cada toque respecto de cada figura.
+  - *Dictado rítmico*: suena un ritmo y hay que elegir cuál de cuatro está escrito; si hay error, se marca dónde está la diferencia y se pueden escuchar los dos.
+  - *Glosario*: unos 60 términos de ritmo con definición, ejemplo en el pentagrama y audio, con buscador y categorías.
 - **Oído**: el entrenamiento auditivo original (adivinar intervalos, conocer intervalos y lectura rápida de notas).
 
 ## Cómo funciona por dentro

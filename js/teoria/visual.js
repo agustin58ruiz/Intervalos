@@ -6,6 +6,7 @@
   const COLOR = {a:'--first', b:'--second', ok:'--ok', bad:'--bad', tenue:'--line', suave:'--muted'};
   const colorDe = c => !c ? cssVar('--ink') : COLOR[c] ? cssVar(COLOR[c]) : c;
   const VF_ACC = {'-2':'bb','-1':'b','0':'n','1':'#','2':'##'};
+  V.cssVar = cssVar; V.color = colorDe;
 
   // ---------- Pentagrama ----------
   // notas: [{l, o, acc (alteración dibujada: null = ninguna, 0 = becuadro), color, texto, arriba}]
