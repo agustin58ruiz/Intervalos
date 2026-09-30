@@ -1,0 +1,18 @@
+/* Playlist de intervalos (pestaña Oído). Usa los tokens de color definidos en oido.css. */
+.pl-card{background:var(--surface);border:1.5px solid var(--line);border-radius:16px;padding:18px 16px 14px;text-align:center;margin:0 0 16px}
+.pl-fase{margin:0;font-size:.8rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--first);min-height:1.3em;font-variant-numeric:tabular-nums}
+.pl-nombre{font-family:"Young Serif",Georgia,serif;font-size:clamp(2rem,9vw,2.8rem);line-height:1.1;margin:8px 0 4px;min-height:1.1em}
+.pl-nombre.oculto{color:var(--muted)}
+.pl-det{margin:0 auto 6px;max-width:34ch;color:var(--muted);min-height:1.5em}
+.pl-staff{min-height:118px;display:flex;justify-content:center;align-items:center}
+.pl-staff .pg svg{max-width:280px}
+/* Barra de progreso con tres zonas: escuchar, pensar y respuesta */
+.pl-barra{position:relative;height:6px;border-radius:3px;overflow:hidden;margin:10px 0 16px;
+  background:linear-gradient(90deg,color-mix(in srgb,var(--second) 30%,var(--line)) 0 var(--a,45%),color-mix(in srgb,var(--first) 35%,var(--line)) var(--a,45%) var(--b,75%),color-mix(in srgb,var(--ok) 35%,var(--line)) var(--b,75%) 100%)}
+.pl-barra span{position:absolute;left:0;top:0;bottom:0;width:0;background:var(--ink);opacity:.75}
+.pl-ctrl{display:flex;justify-content:center;align-items:center;gap:12px}
+.pl-ctrl .pl-play{flex:0 0 auto;min-width:10.5em}
+.pl-ctrl .pl-ico{flex:0 0 auto;width:52px;height:52px;padding:0;font-size:1.3rem;display:grid;place-items:center}
+.pl-cont{margin:12px 0 0;font-size:.85rem;color:var(--muted);min-height:1.3em}
+.pl-aj{margin-top:6px}
+.pl .chips{margin:8px 0 6px}

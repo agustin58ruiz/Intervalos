@@ -18,7 +18,7 @@ Publicada en GitHub Pages: https://agustin58ruiz.github.io/Intervalos/
   - *Tocar el ritmo*: después de un compás de cuenta, se toca el ritmo escrito con la barra espaciadora o en la pantalla; una línea de tiempo muestra dónde cayó cada toque respecto de cada figura.
   - *Dictado rítmico*: suena un ritmo y hay que elegir cuál de cuatro está escrito; si hay error, se marca dónde está la diferencia y se pueden escuchar los dos.
   - *Glosario*: unos 60 términos de ritmo con definición, ejemplo en el pentagrama y audio, con buscador y categorías.
-- **Oído**: el entrenamiento auditivo original (adivinar intervalos, conocer intervalos y lectura rápida de notas).
+- **Oído**: el entrenamiento auditivo original (adivinar intervalos, conocer intervalos y lectura rápida de notas) y una **playlist de intervalos** para aprender escuchando: cada intervalo suena tres veces desde Do, hay una pausa para adivinarlo, una voz dice cuál era y a los 3 segundos sigue otro. Se elige la forma (ascendente, descendente, juntas o una de cada), la pausa (3, 5 u 8 segundos) y qué intervalos entran. Funciona como un reproductor: sigue sonando con la pantalla bloqueada o en otra pestaña y se maneja desde los controles multimedia del sistema.
 
 ## Cómo funciona por dentro
 
@@ -26,4 +26,4 @@ Ver [docs/ARQUITECTURA.md](docs/ARQUITECTURA.md).
 
 Es una página estática: se abre `index.html` desde un servidor cualquiera (por ejemplo `python3 -m http.server`) y no hay que compilar nada. El progreso se guarda en el navegador (`localStorage`).
 
-Samples de piano: Salamander Grand Piano (Alexander Holm, CC BY 3.0). Pentagrama: VexFlow.
+Samples de piano: Salamander Grand Piano (Alexander Holm, CC BY 3.0). Voz de la playlist: voz Laura de Windows (español de España). Pentagrama: VexFlow.

@@ -10,6 +10,7 @@
 <link rel="stylesheet" href="css/oido.css">
 <link rel="stylesheet" href="css/teoria.css">
 <link rel="stylesheet" href="css/ritmo.css">
+<link rel="stylesheet" href="css/playlist.css">
 </head>
 <body>
 <main>
@@ -39,10 +40,11 @@
     <button role="tab" id="tabPractice" aria-controls="practiceView" aria-selected="true">Adivinar intervalos</button>
     <button role="tab" id="tabLearn" aria-controls="learnView" aria-selected="false">Conocer intervalos</button>
     <button role="tab" id="tabNotes" aria-controls="notesView" aria-selected="false">Lectura rápida</button>
+    <button role="tab" id="tabPlaylist" aria-controls="playlistView" aria-selected="false">Playlist</button>
   </div>
   <p class="lede" id="lede">Escuchá dos notas y adiviná la distancia entre ellas. También podés tocar dos teclas para oír y nombrar cualquier intervalo.</p>
 
-  <div class="clefbar"><span>Clave</span>
+  <div class="clefbar" id="clefBar"><span>Clave</span>
     <div class="seg" id="clefSeg">
       <label><input type="radio" name="clef" value="treble"><span>Sol</span></label>
       <label><input type="radio" name="clef" value="bass"><span>Fa</span></label>
@@ -66,7 +68,7 @@
       <option value="4">Mi</option><option value="5">Fa</option><option value="6">Fa♯</option><option value="7">Sol</option>
       <option value="8">Sol♯</option><option value="9">La</option><option value="10">La♯</option><option value="11">Si</option>
     </select></div>
-  <div class="kb-wrap"><div class="keyboard" id="keyboard" aria-label="Teclado de Do4 a Do6"></div></div>
+  <div class="kb-wrap" id="kbWrap"><div class="keyboard" id="keyboard" aria-label="Teclado de Do4 a Do6"></div></div>
   <div class="legend" id="kbLegend"><span style="--c:var(--first)">Primera nota</span><span style="--c:var(--second)">Segunda nota</span></div>
 
   <section id="notesView" role="tabpanel" aria-labelledby="tabNotes" hidden>
@@ -170,12 +172,14 @@
     </fieldset>
   </details>
   </div>
+  <section id="playlistView" class="pl" role="tabpanel" aria-labelledby="tabPlaylist" hidden></section>
   </section>
 </main>
 <div id="glHoja" class="gl-hoja" popover role="dialog" aria-label="Definición"></div>
 
 <script src="js/vendor/vexflow.js"></script>
 <script src="js/muestras-piano.js"></script>
+<script src="js/voces-intervalos.js"></script>
 <script src="js/oido.js"></script>
 <script src="js/teoria/musica.js"></script>
 <script src="js/teoria/visual.js"></script>
@@ -188,5 +192,6 @@
 <script src="js/teoria/lecciones.js"></script>
 <script src="js/teoria/lecciones-ritmo.js"></script>
 <script src="js/teoria/app.js"></script>
+<script src="js/playlist.js"></script>
 </body>
 </html>

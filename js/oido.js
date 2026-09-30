@@ -75,42 +75,55 @@
     });
     active = [];
   }
-  let samplesReady = false;
+  let samplesReady = false, avisarListas;
+  const muestrasListas = new Promise(r => avisarListas = r);
+  const base64ABytes = b64 => { const bin = atob(b64), bytes = new Uint8Array(bin.length); for (let i=0;i<bin.length;i++) bytes[i] = bin.charCodeAt(i); return bytes; };
   function loadSamples(){
     const entries = Object.entries(SAMPLE_DATA);
     let done = 0;
+    const fin = () => { if (++done === entries.length){ samplesReady = true; avisarListas(); } };
+    if (!entries.length) avisarListas();
     entries.forEach(([m,b64])=>{
-      const bin = atob(b64), bytes = new Uint8Array(bin.length);
-      for (let i=0;i<bin.length;i++) bytes[i] = bin.charCodeAt(i);
-      const onOk = buf => { buffers[m] = buf; if (++done === entries.length) samplesReady = true; };
-      const p = ctx.decodeAudioData(bytes.buffer, onOk, ()=>{ done++; });
+      const p = ctx.decodeAudioData(base64ABytes(b64).buffer, buf => { buffers[m] = buf; fin(); }, fin);
       if (p && p.catch) p.catch(()=>{});
     });
   }
-  function synth(midi, when, dur){
+  // synth y tone suenan en el contexto en vivo; con c y dest se usan para renderizar fuera de tiempo real
+  function synth(midi, when, dur, c = ctx, dest = master){
     const f = 440 * Math.pow(2,(midi-69)/12);
     [[1,1],[2,.45],[3,.18],[4,.08]].forEach(([h,amp])=>{
-      const o = ctx.createOscillator(), g = ctx.createGain();
+      const o = c.createOscillator(), g = c.createGain();
       o.frequency.value = f*h;
       g.gain.setValueAtTime(0, when);
       g.gain.linearRampToValueAtTime(amp*0.5, when+0.008);
       g.gain.exponentialRampToValueAtTime(0.0008, when+dur);
-      o.connect(g); g.connect(master); o.start(when); o.stop(when+dur+0.05); track(o,g);
+      o.connect(g); g.connect(dest); o.start(when); o.stop(when+dur+0.05); if (c === ctx) track(o,g);
     });
   }
-  function tone(midi, when, dur){
+  function tone(midi, when, dur, c = ctx, dest = master){
     const keys = Object.keys(buffers).map(Number);
-    if (!keys.length){ synth(midi, when, dur); return; }
+    if (!keys.length){ synth(midi, when, dur, c, dest); return; }
     const sm = keys.reduce((a,b)=>Math.abs(b-midi)<Math.abs(a-midi)?b:a);
-    const src = ctx.createBufferSource(), g = ctx.createGain();
+    const src = c.createBufferSource(), g = c.createGain();
     src.buffer = buffers[sm];
     src.playbackRate.value = Math.pow(2,(midi-sm)/12);
     const ring = dur + 0.5;
     g.gain.setValueAtTime(1.6, when);
     g.gain.setValueAtTime(1.6, when+ring-0.35);
     g.gain.exponentialRampToValueAtTime(0.001, when+ring);
-    src.connect(g); g.connect(master);
-    src.start(when); src.stop(when+ring+0.05); track(src,g);
+    src.connect(g); g.connect(dest);
+    src.start(when); src.stop(when+ring+0.05); if (c === ctx) track(src,g);
+  }
+  // Renderiza notas de piano [{midi, t, dur}] y audios ya decodificados [{buffer, t, vol}] a un AudioBuffer
+  // de dur segundos, fuera de tiempo real (para armar pistas que se reproducen con un <audio>)
+  function render(notas, clips, dur, sr = 32000){
+    const oc = new (window.OfflineAudioContext || window.webkitOfflineAudioContext)(1, Math.ceil(dur*sr), sr);
+    const m = oc.createGain(); m.gain.value = 0.35;
+    const comp = oc.createDynamicsCompressor();
+    m.connect(comp); comp.connect(oc.destination);
+    notas.forEach(n => tone(n.midi, n.t, n.dur, oc, m));
+    clips.forEach(x => { const s = oc.createBufferSource(), g = oc.createGain(); s.buffer = x.buffer; g.gain.value = x.vol || 1; s.connect(g); g.connect(oc.destination); s.start(x.t); });
+    return oc.startRendering();
   }
   // Nota que dura exactamente dur segundos (para ritmos: los silencios tienen que oírse)
   function held(midi, when, dur){
@@ -671,7 +684,8 @@
   const LEDE = {
     practice: 'Escuchá dos notas y adiviná la distancia entre ellas. También podés tocar dos teclas para oír y nombrar cualquier intervalo.',
     learn: 'Conocé cada intervalo: cómo suena subiendo, bajando y junto, qué canción lo empieza y con cuál se suele confundir.',
-    notes: 'Leé la nota en el pentagrama y elegí su nombre. Las notas que más te cuestan salen más seguido.'
+    notes: 'Leé la nota en el pentagrama y elegí su nombre. Las notas que más te cuestan salen más seguido.',
+    playlist: 'Escuchá intervalos sin hacer nada más: cada uno suena tres veces, tenés unos segundos para adivinarlo y después una voz te dice cuál era. Sigue sonando con la pantalla bloqueada o en otra pestaña.'
   };
   function setView(v){
     if (v === view) return;
@@ -679,13 +693,16 @@
     try { localStorage.setItem('intervalos-vista', v); } catch(e){}
     cancelAuto(); stopAll(); clearTimeout(cmpTimer); clearTimeout(nTimer); pick = null; clearKeys();
     staffEl.hidden = true; invState = null; invEl.hidden = true;
-    const learn = v === 'learn', notes = v === 'notes';
-    [['tabPractice','practice'],['tabLearn','learn'],['tabNotes','notes']].forEach(([id, x]) => $(id).setAttribute('aria-selected', String(v === x)));
-    $('practiceView').hidden = v !== 'practice'; $('learnView').hidden = !learn; $('notesView').hidden = !notes;
-    $('modeBar').hidden = v !== 'practice'; $('rootBar').hidden = notes; $('kbLegend').hidden = notes;
+    const learn = v === 'learn', notes = v === 'notes', pl = v === 'playlist';
+    [['tabPractice','practice'],['tabLearn','learn'],['tabNotes','notes'],['tabPlaylist','playlist']].forEach(([id, x]) => $(id).setAttribute('aria-selected', String(v === x)));
+    $('practiceView').hidden = v !== 'practice'; $('learnView').hidden = !learn; $('notesView').hidden = !notes; $('playlistView').hidden = !pl;
+    $('modeBar').hidden = v !== 'practice'; $('rootBar').hidden = notes || pl; $('kbLegend').hidden = notes || pl;
+    $('clefBar').hidden = pl; $('kbWrap').hidden = pl;   // la playlist no usa el teclado
     $('lede').textContent = LEDE[v];
-    if (!notes) $(learn ? 'learnStaffSlot' : 'practiceStaffSlot').append(staffEl, invEl);
-    if (notes){
+    if (!notes && !pl) $(learn ? 'learnStaffSlot' : 'practiceStaffSlot').append(staffEl, invEl);
+    if (pl){
+      if (window.Playlist) Playlist.mostrar();
+    } else if (notes){
       if (!nq) newNote(); else { drawNote(); renderNoteMap(); if (nq.answered) keyEls[nq.midi] && keyEls[nq.midi].classList.add(nq.guess === nq.name ? 'first' : 'second'); }
     } else if (learn){
       renderLearnPick(); renderLearnStat();
@@ -697,6 +714,7 @@
   $('tabPractice').addEventListener('click', () => setView('practice'));
   $('tabLearn').addEventListener('click', () => setView('learn'));
   $('tabNotes').addEventListener('click', () => setView('notes'));
+  $('tabPlaylist').addEventListener('click', () => setView('playlist'));
   document.querySelectorAll('.lplay [data-play]').forEach(b => b.addEventListener('click', () => playLearn(b.dataset.play)));
   $('lOther').addEventListener('click', () => { if (learnS !== null) showLearn(learnS, true); });
 
@@ -998,6 +1016,10 @@
     nota(m, cuando, dur){ audio(); held(m, cuando, dur); },
     clic(cuando, fuerte, vol){ audio(); click(cuando, fuerte, vol); },
     golpe(){ audio(); knock(ctx.currentTime); },
+    // Para la playlist: esperar los samples, decodificar un MP3 en base64 y renderizar una pista
+    muestras: () => muestrasListas,
+    decodificar(b64){ if (!ctx) audio(); return new Promise((ok, mal) => { const p = ctx.decodeAudioData(base64ABytes(b64).buffer, ok, mal); if (p && p.catch) p.catch(mal); }); },
+    renderizar: (notas, clips, dur) => render(notas, clips || [], dur),
     // Momento (en el reloj de performance.now(), ms) en que se oye un instante del reloj del audio
     aMs(t){
       audio();
@@ -1006,5 +1028,5 @@
     }
   };
   window.Oido = { setView: v => setView(v), vista: () => view };
-  try { const v0 = localStorage.getItem('intervalos-vista'); if (v0 === 'learn' || v0 === 'notes') setView(v0); } catch(e){}
+  try { const v0 = localStorage.getItem('intervalos-vista'); if (v0 === 'learn' || v0 === 'notes' || v0 === 'playlist') setView(v0); } catch(e){}
 })();

@@ -2,7 +2,7 @@
 
 La aplicación es una página estática (sin compilación ni dependencias de npm) que se publica en GitHub Pages. Tiene dos partes:
 
-- **Oído** (`js/oido.js`): la aplicación original de entrenamiento auditivo: adivinar intervalos, fichas por intervalo y lectura rápida de notas.
+- **Oído** (`js/oido.js`): la aplicación original de entrenamiento auditivo: adivinar intervalos, fichas por intervalo y lectura rápida de notas. La **playlist de intervalos** (`js/playlist.js`) es otra vista de esta pestaña.
 - **Aula de teoría** (`js/teoria/*`): lecciones, práctica con corrección explicada y evaluación, incluida la unidad de ritmo, la pestaña Ritmo (tocar, dictado y glosario).
 
 ## Análisis de la aplicación original
@@ -70,6 +70,17 @@ Al equivocarse, la corrección muestra la respuesta correcta, el procedimiento c
 - Cada error se clasifica con un **diagnóstico** (`numero`, `numero-semis`, `familia`, `calidad`, `aum-dis`, `armadura`, `accidental`, `enarmonia`, …). Por ejemplo, si la persona responde con el mismo número de semitonos pero otro número de intervalo, el diagnóstico es “confunde número con calidad”.
 - Si el mismo diagnóstico aparece dos veces en las últimas seis respuestas, se recomienda repasar: un botón lleva a la lección y el paso exactos, y otro a ejercicios específicos.
 - La práctica recomendada elige la habilidad por muestreo de Thompson: sortea un valor de cada Beta y practica la más baja.
+
+## Playlist de intervalos
+
+El objetivo es que el navegador la trate como un reproductor de música: que siga sonando con la pantalla bloqueada o la pestaña de fondo y que se maneje desde los controles del sistema. Web Audio solo no alcanza para eso (el navegador lo suspende o no muestra controles), así que:
+
+- Cada intervalo se **renderiza a una pista** con `Sonido.renderizar` (un `OfflineAudioContext` que usa los mismos samples de piano): tres repeticiones, la pausa para adivinar, la voz y 3 segundos de espera. La pista se convierte a WAV y se reproduce con un único elemento `<audio>`.
+- Mientras suena una pista ya se arma la siguiente; al terminar (`ended`) se pasa a ella. Si cambian los ajustes, se descarta la que estaba preparada.
+- La **Media Session API** publica el título (primero «¿Qué intervalo es?» y, cuando habla la voz, el nombre del intervalo), el ícono (`img/`) y las acciones: reproducir, pausar, siguiente, repetir (anterior) y detener.
+- La pantalla se actualiza con `timeupdate` del `<audio>` (sigue funcionando de fondo) y con `requestAnimationFrame` cuando la pestaña está visible.
+- La voz son 12 frases fijas generadas de antemano con una voz de Windows y guardadas como MP3 en `js/voces-intervalos.js` (así forman parte de la pista y se oyen con la pantalla bloqueada, cosa que la síntesis de voz del navegador no garantiza).
+- Los intervalos salen al azar entre los elegidos, con algo más de peso para los que más se fallan en «Adivinar intervalos» (`intervalos-pesos`).
 
 ## Evaluación
 
