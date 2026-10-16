@@ -178,7 +178,7 @@
       if (!a.cal || !calOk.includes(a.cal)) continue;
       if ([a.rx, a.ry].some(r => Math.abs(r.a) > 1)) continue;
       if (arm && o.forzarArmadura !== false && !a.afectadas.length && Math.random() < 0.75) continue;
-      if (o.descendente && Math.random() < 0.3){ a.x = y; a.y = x; const t = a.rx; a.rx = a.ry; a.ry = t; }
+      if (o.descendente && Math.random() < 0.3){ a.x = y; a.y = x; const t = a.rx; a.rx = a.ry; a.ry = t; a.iv = Object.assign({}, a.iv, {sube: !a.iv.sube}); }
       return a;
     }
     return E.analizar(esc(0, 4), esc(2, 4), 0);
@@ -493,5 +493,6 @@
 
   E.analizarPar = E.analizar;
   E.op = op; E.resultado = resultado; E.tipo = tipo;   // para registrar otros catálogos (ejercicios-ritmo.js)
+  E.generarIntervalo = generarIntervalo;
   window.Ejercicios = E;
 })();

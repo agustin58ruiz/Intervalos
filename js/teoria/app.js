@@ -227,7 +227,7 @@
   // ======================================================================
   // Navegación
   // ======================================================================
-  const SECCIONES = ['aprender', 'practicar', 'evaluar', 'ritmo', 'oido'];
+  const SECCIONES = ['aprender', 'practicar', 'intervalos', 'evaluar', 'ritmo', 'oido'];
   let seccion = 'aprender';
   function ir(s, opts = {}){
     seccion = s;
@@ -237,6 +237,8 @@
       $('sec-' + x).hidden = x !== s;
     });
     if (window.Sonido) Sonido.parar();
+    if (window.EstudioIntervalos) EstudioIntervalos.salir();
+    if (s === 'intervalos' && !opts.sinRender) EstudioIntervalos.mostrar($('sec-intervalos'));
     if (s === 'aprender' && !opts.sinRender) indiceAprender();
     if (s === 'practicar' && !opts.sinRender) hubPracticar();
     if (s === 'evaluar' && !opts.sinRender) introEvaluacion();

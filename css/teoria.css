@@ -231,3 +231,21 @@
 .rev.ok summary span{color:var(--ok)}
 .rev.bad summary span{color:var(--bad)}
 .rev-body{padding:0 0 10px}
+
+/* Intervalos y armaduras */
+.ei-ajustes{margin:0 0 16px}
+.ei-card{background:var(--surface);border:1.5px solid var(--line);border-radius:14px;padding:14px 14px 6px}
+.ei-card .ej-vis{background:var(--paper)}
+.ei-arm{color:var(--muted);font-size:.92rem}
+.ei-opts{grid-template-columns:repeat(2,1fr)}
+.ei-opts .opt{position:relative;padding:22px 10px 14px}
+.ei-opts kbd{position:absolute;top:5px;left:8px;font:inherit;font-size:.68rem;font-weight:500;color:var(--muted)}
+.ei-cuenta{height:4px;border-radius:2px;background:var(--line);overflow:hidden;margin:0 0 10px}
+.ei-cuenta span{display:block;height:100%;width:100%;background:var(--ok);transform-origin:left}
+.ei-cuenta.corre span{animation:countdown 3s linear forwards}
+@media (prefers-reduced-motion: reduce){.ei-cuenta.corre span{animation:none}}
+.ei-exp{margin:4px 0 6px}
+.ei-exp-t{margin:6px 0 4px;font-size:1rem}
+.ei-exp .ej-tk{margin:4px 0 10px}
+.ei-exp .tk{min-width:0}
+.ei-score{margin-top:14px}
