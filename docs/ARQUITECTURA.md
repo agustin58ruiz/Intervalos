@@ -102,3 +102,24 @@ js/teoria/
 - **Reglas** (`Armonia.REGLAS`): cada una tiene severidad (`error` = regla general, `aviso` = preferencia de estilo, `info` = excepción aceptada o consejo), el porqué musical y cómo corregirla. `Armonia.analizar(K, columnas)` devuelve los acordes identificados, los movimientos entre cada par de voces, los problemas y la cadencia.
 - **Realizador** (`Armonia.realizar`): genera las disposiciones válidas de cada acorde y elige la mejor sucesión con programación dinámica, usando las mismas reglas como costo (más el tamaño de los movimientos). Se usa para los ejemplos, las soluciones y las pistas, y para generar ejercicios; cualquier otra solución que cumpla las reglas se acepta.
 - **Progreso**: las respuestas alimentan las Betas de las habilidades `h-*` del aula; los desafíos guardan en `armonia-progreso` los resueltos por nivel y las reglas que más se rompen.
+
+### Ampliación: el resto de Piston y MIDI
+
+```
+js/teoria/
+  armonia.js             + A.info(K, acorde): notas, miembros, numeral, función y notas con tendencia de
+                           cualquier acorde: diatónicos (tríadas, séptimas, V⁹), dominantes secundarias
+                           (esp: 'sec'), intercambio modal ('mix'), napolitana ('N') y sextas aumentadas
+                           ('It', 'Fr', 'Al'). Reglas nuevas (tendencias, falsa relación, quintas de Mozart,
+                           usos del ⁶₄, posición de la novena), tonalidades vecinas y acordes pivote.
+  midi.js                Web MIDI: dispositivos, eventos de notas y pedal, mensajes de compatibilidad, panel
+  midi-captura.js        Agrupar notas en acordes, asignar voces SATB, deletrear según la tonalidad
+  piano.js               Ejercicios de piano (tocar acordes y escalas) con MIDI o teclado de pantalla
+  notas-extranas.js      Melodía con ritmo sobre el bajo: dibujo, sonido, generación y explicación
+  ejercicios-piston.js   Tríadas, escalas, ⁶₄, notas extrañas, pivote, séptimas, secundarias, alterados
+  lecciones-piston.js    Unidades «Piston I», «Piston II» y «Piston III»
+```
+
+- **El editor y MIDI**: el editor activo (el último que se tocó) recibe las notas. Las sostenidas se dibujan tenues en el acorde actual; al confirmar el acorde se asignan voces (respetando las dadas y minimizando el movimiento) y se avanza. Con una sola nota se escribe la voz elegida.
+- Los ejercicios de piano usan el modo `propio` de las preguntas: sirven igual en lecciones, Practicar y Evaluación.
+- El plan original de la entrada MIDI está en [PLAN-MIDI.md](PLAN-MIDI.md) (ya implementado).

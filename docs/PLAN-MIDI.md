@@ -1,6 +1,6 @@
 # Plan: entrada con teclado MIDI
 
-Estado: **pendiente**. Este documento deja definido cómo agregar la entrada MIDI en tiempo real al editor a cuatro voces y a los ejercicios de armonía, para implementarlo más adelante sin rediseñar nada.
+Estado: **implementado** (midi.js, midi-captura.js, editor, desafíos y piano.js). Este documento fue el diseño previo; se conserva como referencia.
 
 ## Objetivo
 

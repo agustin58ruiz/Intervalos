@@ -9,6 +9,7 @@
   const boton = (texto, cls, fn) => { const b = h('button', 'btn ' + (cls || 'secondary'), texto); b.type = 'button'; if (fn) b.addEventListener('click', fn); return b; };
   const pc = m => ((m % 12) + 12) % 12;
   const pcNota = n => ((M.PC[n.l] + n.a) % 12 + 12) % 12;
+  const deletrear = (K, m, o) => window.MidiCaptura ? window.MidiCaptura.deletrear(K, m, o) : M.deMidi(m);
 
   Object.assign(P.HABILIDADES, {
     'p-acordes':  {nombre: 'Tocar acordes en el piano',     leccion: 'pi-acordes',  paso: 0, ejercicio: 'p-acorde'},
@@ -69,8 +70,10 @@
       c = {g, inv: o.inversiones ? azar([0, 1, 2]) : 0, sept: !!o.septimas && g === 4};
       if (c.sept && o.inversiones) c.inv = azar([0, 1, 2, 3]);
     }
+    c = Object.assign({inv: 0}, c);
     const inf = A.info(K, c);
-    const pide = o.inversiones || c.inv ? (inf.aumentada ? `con el ${M.corto(inf.notas[0])} en el bajo` : `en ${A.INVERSION[c.inv]} (${M.corto(inf.notas[c.inv])} en el bajo)`) : 'en cualquier posición';
+    const pideBajo = !!(o.inversiones || c.inv || inf.aumentada);
+    const pide = pideBajo ? (inf.aumentada ? `con el ${M.corto(inf.notas[0])} en el bajo` : `en ${A.INVERSION[c.inv]} (${M.corto(inf.notas[c.inv])} en el bajo)`) : 'en cualquier posición';
     const q = {modo: 'propio', enunciado: `Tocá el acorde <b>${A.romano(K, c)}</b> de ${K.nombre} ${pide}.`,
       montar(resp, responder){ areaTocar(resp, {modo: 'acorde', esperadas: inf.notas.length, alTerminar: (ms, kb) => { q._kb = kb; responder(ms); }}); },
       correcta: inf.notas.map(pcNota).join(','),
@@ -79,21 +82,21 @@
         const pcs = new Set(ms.map(pc)), req = inf.notas.map(pcNota);
         const faltan = inf.notas.filter((n, i) => !pcs.has(req[i]) && !(inf.sept && i === 2 && !inf.aumentada));   // la quinta del acorde de séptima se puede omitir
         const sobran = [...pcs].filter(x => !req.includes(x));
-        const bajoOk = !ms.length ? false : !(o.inversiones || c.inv) || pc(ms[0]) === req[Math.min(c.inv, req.length - 1)];
+        const bajoOk = !ms.length ? false : !pideBajo || pc(ms[0]) === req[Math.min(c.inv, req.length - 1)];
         const ok = ms.length > 0 && !faltan.length && !sobran.length && bajoOk;
         const marcar = {};
-        ms.forEach(m => marcar[m] = {c: req.includes(pc(m)) ? 'ok' : 'bad', t: M.corto(MidiCaptura ? MidiCaptura.deletrear(K, m, {notas: inf.notas}) : M.deMidi(m))});
+        ms.forEach(m => marcar[m] = {c: req.includes(pc(m)) ? 'ok' : 'bad', t: M.corto(deletrear(K, m, {notas: inf.notas}))});
         if (q._kb) q._kb.marcar(marcar);
         let donde = '';
         if (!ok){
           const p = [];
           if (faltan.length) p.push(`faltó ${faltan.map(n => M.corto(n)).join(', ')}`);
-          if (sobran.length) p.push(`sobra ${sobran.map(x => M.corto(MidiCaptura.deletrear(K, x + 60))).join(', ')}, que no es del acorde`);
+          if (sobran.length) p.push(`sobra ${sobran.map(x => M.corto(deletrear(K, x + 60))).join(', ')}, que no es del acorde`);
           if (!bajoOk && ms.length) p.push(`en el bajo tiene que ir ${M.corto(inf.notas[Math.min(c.inv, inf.notas.length - 1)])}, la nota más grave que tocás`);
           donde = p.length ? p.join('; ') + '.' : 'No llegó ninguna nota.';
         }
         return {ok, diag: ok ? null : 'h-acordes', habs: [['p-acordes', ok], ['h-acordes', ok]],
-          tu: ms.length ? ms.map(m => M.corto(MidiCaptura.deletrear(K, m, {notas: inf.notas}), {oct: true})).join(' · ') : '—',
+          tu: ms.length ? ms.map(m => M.corto(deletrear(K, m, {notas: inf.notas}), {oct: true})).join(' · ') : '—',
           correcta: `${A.romanoTexto(K, c)}: ${inf.notas.map((n, i) => `${M.corto(n)}${inf.aumentada ? '' : ` (${['fundamental', 'tercera', 'quinta', 'séptima', 'novena'][i]})`}`).join(', ')}`,
           explicacion: `<p>${A.nombreAcorde(K, c)}. ${inf.aumentada ? 'Las sextas aumentadas se tocan con el ♭6 en el bajo y el ♯4 arriba: entre los dos forman la sexta aumentada que da el nombre.' : `Para ${A.INVERSION[c.inv]}, la nota más grave es ${M.corto(inf.notas[Math.min(c.inv, inf.notas.length - 1)])}; las demás pueden ir en cualquier orden y octava.`}${inf.sept && !inf.aumentada ? ' En los acordes de séptima se puede omitir la quinta.' : ''}</p>`,
           donde,

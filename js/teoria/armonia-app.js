@@ -329,27 +329,35 @@
 
   function recorrido(el){
     el.appendChild(h('p', 'lede', 'Armonía tonal y conducción de voces a cuatro partes, tomando como referencia los principios de <i>Harmony</i> de Walter Piston. Se aprende haciendo: cada lección explica el razonamiento, lo muestra con ejemplos que se escuchan y lo practica en el editor.'));
-    const u = L.unidades.find(x => x.id === 'armonia');
-    if (!u) return;
-    const hechas = u.lecciones.filter(l => P.leccionHecha(l.id)).length;
-    const sig = u.lecciones.find(l => !P.leccionHecha(l.id));
+    const unidades = L.unidades.filter(x => x.id === 'armonia' || x.id.startsWith('piston'));
+    if (!unidades.length) return;
+    const todas = unidades.flatMap(u => u.lecciones);
+    const hechas = todas.filter(l => P.leccionHecha(l.id)).length;
+    const sig = todas.find(l => !P.leccionHecha(l.id));
     const c = h('div', 'continuar');
-    c.innerHTML = `<p class="kicker">${hechas}/${u.lecciones.length} lecciones</p><h2>${sig ? sig.titulo : 'Recorrido completo'}</h2><p>${sig ? sig.resumen : 'Seguí con los desafíos de armonización.'}</p>`;
+    c.innerHTML = `<p class="kicker">${hechas}/${todas.length} lecciones</p><h2>${sig ? sig.titulo : 'Recorrido completo'}</h2><p>${sig ? `${sig.unidad.titulo} · ${sig.resumen}` : 'Seguí con los desafíos de armonización.'}</p>`;
     c.appendChild(sig ? boton(hechas ? 'Continuar' : 'Empezar', 'primary', () => Aula.abrirLeccion(sig.id)) : boton('Ir a los desafíos', 'primary', () => mostrar(raiz, 'desafios')));
     el.appendChild(c);
-    const ol = h('ol', 'lecs');
-    u.lecciones.forEach(l => {
-      const li = h('li'), hecha = P.leccionHecha(l.id);
-      const b = h('button', 'lec' + (hecha ? ' hecha' : '') + (sig && sig.id === l.id ? ' actual' : ''), `<span class="lec-ic" aria-hidden="true">${hecha ? '✓' : ''}</span><span><b>${l.titulo}</b><small>${l.resumen}</small></span>`);
-      b.type = 'button'; b.addEventListener('click', () => Aula.abrirLeccion(l.id));
-      li.appendChild(b); ol.appendChild(li);
+    unidades.forEach(u => {
+      const sec = h('section', 'unidad');
+      const hu = u.lecciones.filter(l => P.leccionHecha(l.id)).length;
+      sec.appendChild(h('h2', null, `${u.titulo} <small>${hu}/${u.lecciones.length}</small>`));
+      sec.appendChild(h('p', 'u-desc', u.desc));
+      const ol = h('ol', 'lecs');
+      u.lecciones.forEach(l => {
+        const li = h('li'), hecha = P.leccionHecha(l.id);
+        const b = h('button', 'lec' + (hecha ? ' hecha' : '') + (sig && sig.id === l.id ? ' actual' : ''), `<span class="lec-ic" aria-hidden="true">${hecha ? '✓' : ''}</span><span><b>${l.titulo}</b><small>${l.resumen}</small></span>`);
+        b.type = 'button'; b.addEventListener('click', () => Aula.abrirLeccion(l.id));
+        li.appendChild(b); ol.appendChild(li);
+      });
+      sec.appendChild(ol);
+      el.appendChild(sec);
     });
-    el.appendChild(ol);
     const rap = h('section', 'unidad');
     rap.appendChild(h('h2', null, 'Práctica rápida'));
-    rap.appendChild(h('p', 'u-desc', 'Ejercicios de opción múltiple con explicación: reconocer acordes, funciones, duplicación, movimientos, errores y cadencias.'));
+    rap.appendChild(h('p', 'u-desc', 'Ejercicios con explicación: acordes, funciones, duplicación, movimientos, errores, cadencias, sexta y cuarta, notas extrañas, séptimas, modulación, dominantes secundarias y acordes alterados, y ejercicios de piano (con teclado MIDI o en la pantalla).'));
     const g = h('div', 'tipos');
-    ['h-grado', 'h-funcion', 'h-duplicacion', 'h-movimiento', 'h-error', 'h-cadencia'].forEach(t => {
+    ['h-grado', 'h-funcion', 'h-duplicacion', 'h-movimiento', 'h-error', 'h-cadencia', 'h-calidad', 'h-escala', 'h-64', 'h-ne', 'h-septima', 'h-pivote', 'h-secundaria', 'h-cromatico', 'p-acorde', 'p-escala'].forEach(t => {
       const tp = window.Ejercicios.TIPOS[t];
       const d = h('div', 'tipo', `<b>${tp.nombre}</b>`);
       const a = h('div', 'tipo-acc'); a.appendChild(boton('Practicar', 'secondary', () => Aula.practicarTipo(t, {cantidad: 5})));
