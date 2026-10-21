@@ -8,7 +8,7 @@
   const boton = (texto, cls, fn, titulo) => { const b = h('button', 'btn ' + (cls || 'secondary'), texto); b.type = 'button'; if (titulo){ b.title = titulo; b.setAttribute('aria-label', titulo); } if (fn) b.addEventListener('click', fn); return b; };
   const VF_ACC = {'-2': 'bb', '-1': 'b', '0': 'n', '1': '#', '2': '##'};
   const BASE = {treble: 30, bass: 18};               // paso de la línea inferior: Mi4 / Sol2
-  const MIEMBRO = {F: 'fundamental', '3': 'tercera', '5': 'quinta', '7': 'séptima'};
+  const MIEMBRO = {F: 'fundamental', '3': 'tercera', '5': 'quinta', '7': 'séptima', '9': 'novena', '♭6': '♭6 (sexta menor)', '1': 'tónica', '♯4': '♯4 (cuarta aumentada)', '2': '2 (segunda)', '♭3': '♭3 (tercera menor)'};
   const SEV = {error: 'Error de conducción', aviso: 'Estilo', info: 'Excepción o consejo'};
   const TIPO = {regla: 'Regla general', estilo: 'Preferencia de estilo', consejo: 'Excepción aceptada / consejo'};
   const INICIO = {S: 35, A: 32, T: 28, B: 21};       // paso donde aparece una voz vacía al usar las flechas
@@ -243,7 +243,7 @@
         else if (id && an.acordes[i].lleno && !id.ajenas.length) t = A.romanoTexto(K, id.acorde);
         else if (id && id.ajenas.length && an.acordes[i].lleno){ t = '?'; color = V.cssVar('--bad'); }
         if (t){ ctx.setFillStyle(color); ctx.fillText(t, g.cx - t.length*3.6, H - 26); }
-        const fn = pedido ? A.FUNCION[pedido.g] : (id && an.acordes[i].lleno && !id.ajenas.length ? A.FUNCION[id.acorde.g] : '');
+        const fn = pedido ? A.info(K, pedido).funcion : (id && an.acordes[i].lleno && !id.ajenas.length ? id.info.funcion : '');
         if (fn){ ctx.setFont('Figtree, system-ui, sans-serif', 11, 'normal'); ctx.setFillStyle(muted); ctx.fillText(fn, g.cx - 3, H - 10); ctx.setFont('Figtree, system-ui, sans-serif', 14, 'bold'); }
       });
       ctx.restore();
@@ -268,7 +268,8 @@
       let titulo = `Acorde ${c + 1}`;
       if (id && ac.lleno && !id.ajenas.length){
         const a = id.acorde;
-        titulo += `: <b>${A.romano(K, a)}</b> — ${A.nombreAcorde(K, a)}, ${A.INVERSION[a.inv]} · función de ${A.NOMBRE_FUNCION[A.FUNCION[a.g]]}`;
+        const pos = id.info.aumentada ? `${M.corto(col.B)} en el bajo` : A.INVERSION[a.inv];
+        titulo += `: <b>${A.romano(K, a)}</b> — ${A.nombreAcorde(K, a)}, ${pos} · función de ${A.NOMBRE_FUNCION[id.info.funcion]}${id.tipo64 ? ` · ⁶₄ ${A.TIPOS64[id.tipo64]}` : ''}`;
       } else if (id && ac.lleno) titulo += ': <span class="bad">las notas no forman un acorde de la tonalidad</span>';
       else titulo += ': incompleto';
       if (op.cifrado && op.cifrado[c] && op.mostrarCifrado) titulo += `<br><small>Pedido: ${A.romanoTexto(K, op.cifrado[c])}</small>`;

@@ -45,47 +45,115 @@
   A.alteracionPorDefecto = (K, l) => A.notaGrado(K, A.gradoDe(K, l), true).a;
 
   // ---------- Acordes ----------
-  // Un acorde es {g: grado 0–6, inv: 0–3, sept: bool}
+  // Un acorde es {g: grado 0–6, inv: 0–3, sept: bool, nov: bool} (diatónico) o un acorde
+  // cromático con esp:
+  //   'sec' dominante secundaria: {esp, base: 'V'|'V7'|'vii'|'vii7'|'viiø7', de: grado destino}
+  //   'mix' acorde de intercambio modal (del modo paralelo): {esp, g, sept}
+  //   'N' sexta napolitana (♭II), 'It' | 'Fr' | 'Al' sextas aumentadas
   const ROMANO = ['I','II','III','IV','V','VI','VII'];
   const elevaSensible = (K, g) => K.modo === 'menor' && (g === 4 || g === 6);
-  A.MIEMBROS = ['F', '3', '5', '7'];
-  // Notas del acorde, en orden: fundamental, tercera, quinta (y séptima)
-  A.notasAcorde = (K, c) => {
-    const el = elevaSensible(K, c.g);
-    const out = [0, 2, 4].map(d => A.notaGrado(K, c.g + d, el));
-    if (c.sept) out.push(A.notaGrado(K, c.g + 6, el));
-    return out;
-  };
+  A.MIEMBROS = ['F', '3', '5', '7', '9'];
+  const SEXTAS = {It: 'italiana', Fr: 'francesa', Al: 'alemana'};
   const pc = n => ((M.PC[n.l] + n.a) % 12 + 12) % 12;
-  A.calidad = (K, c) => {
-    const [f, t, q] = A.notasAcorde(K, c);
+  const rel = (n, num, cal, abajo) => { const x = M.construir({l: n.l, a: n.a, o: 4}, num, cal, abajo); return {l: x.l, a: x.a}; };
+  const triada = (f, q) => [f, rel(f, 3, q === 'M' || q === 'A' ? 'M' : 'm'), rel(f, 5, q === 'd' ? 'd' : q === 'A' ? 'A' : 'J')];
+  A.paralela = K => ({modo: K.modo === 'mayor' ? 'menor' : 'mayor', arm: K.arm + (K.modo === 'mayor' ? -3 : 3), tonica: K.tonica});
+  // Calidad a partir de las notas: M, m, d, A (+ tipo de séptima: 7, maj7, ø7, °7)
+  function calidadNotas(ns){
+    const [f, t, q, s] = ns;
     const i3 = (pc(t) - pc(f) + 12) % 12, i5 = (pc(q) - pc(f) + 12) % 12;
-    return i3 === 4 && i5 === 7 ? 'M' : i3 === 3 && i5 === 7 ? 'm' : i3 === 3 && i5 === 6 ? 'd' : i3 === 4 && i5 === 8 ? 'A' : '?';
+    const tri = i3 === 4 && i5 === 7 ? 'M' : i3 === 3 && i5 === 7 ? 'm' : i3 === 3 && i5 === 6 ? 'd' : i3 === 4 && i5 === 8 ? 'A' : '?';
+    if (!s) return {tri, sep: null};
+    const i7 = (pc(s) - pc(f) + 12) % 12;
+    return {tri, sep: i7 === 10 ? (tri === 'd' ? 'ø7' : '7') : i7 === 11 ? 'maj7' : i7 === 9 ? '°7' : '?'};
+  }
+  const numeral = (g, q, sep, bemol) => {
+    let r = (bemol ? '♭' : '') + ROMANO[g];
+    if (q.tri === 'm' || q.tri === 'd') r = r.toLowerCase();
+    if (sep === '°7' || (q.tri === 'd' && !sep)) r += '°';
+    else if (sep === 'ø7') r += 'ø';
+    if (q.tri === 'A') r += '+';
+    return r;
   };
-  const SUP = {'6': '⁶', '7': '⁷', '4': '⁴', '5': '⁵', '3': '³', '2': '²'};
+  // Toda la información de un acorde (notas, miembros, numeral, función, notas con tendencia)
+  A.info = (K, c) => {
+    let notas, miembros, g, funcion, base, sufijo = '', nombreEsp = '', bemol = false;
+    if (!c.esp){
+      const el = elevaSensible(K, c.g);
+      notas = [0, 2, 4].map(d => A.notaGrado(K, c.g + d, el));
+      if (c.sept || c.nov) notas.push(A.notaGrado(K, c.g + 6, el));
+      if (c.nov) notas.push(A.notaGrado(K, c.g + 8, el));
+      miembros = A.MIEMBROS.slice(0, notas.length);
+      g = c.g; funcion = A.FUNCION[c.g];
+    } else if (c.esp === 'sec'){
+      const dest = A.notaGrado(K, c.de, false);
+      if (c.base[0] === 'V'){ const f = rel(dest, 5, 'J'); notas = triada(f, 'M'); if (c.base === 'V7') notas.push(rel(f, 7, 'm')); g = (c.de + 4) % 7; }
+      else { const f = rel(dest, 2, 'm', true); notas = triada(f, 'd'); if (c.base === 'vii7') notas.push(rel(f, 7, 'd')); if (c.base === 'viiø7') notas.push(rel(f, 7, 'm')); g = (c.de + 6) % 7; }
+      miembros = A.MIEMBROS.slice(0, notas.length);
+      funcion = 'D';
+      sufijo = '/' + numeral(c.de, calidadNotas(A.info(K, {g: c.de, inv: 0}).notas), null);
+      nombreEsp = `dominante secundaria de ${A.nombreAcorde(K, {g: c.de, inv: 0})}`;
+    } else if (c.esp === 'mix'){
+      const P = A.paralela(K);
+      const el = K.modo === 'mayor' ? (c.g === 6 && c.sept) : false;
+      notas = [0, 2, 4].map(d => A.notaGrado(P, c.g + d, el));
+      if (c.sept) notas.push(A.notaGrado(P, c.g + 6, el));
+      miembros = A.MIEMBROS.slice(0, notas.length);
+      g = c.g; funcion = A.FUNCION[c.g];
+      bemol = notas[0].a < A.alteracionPorDefecto(K, notas[0].l);
+      nombreEsp = K.modo === 'mayor' ? 'tomado del modo menor (intercambio modal)' : (c.g === 0 ? 'tercera de picardía' : 'tomado del modo mayor');
+    } else if (c.esp === 'N'){
+      const T = A.notaGrado(K, 0), f = rel(T, 2, 'm');
+      notas = triada(f, 'M'); miembros = A.MIEMBROS.slice(0, 3);
+      g = 1; funcion = 'S'; nombreEsp = 'sexta napolitana';
+    } else {
+      const T = A.notaGrado(K, 0);
+      notas = [rel(T, 6, 'm'), T];
+      miembros = ['♭6', '1'];
+      if (c.esp === 'Fr'){ notas.push(rel(T, 2, 'M')); miembros.push('2'); }
+      if (c.esp === 'Al'){ notas.push(rel(T, 3, 'm')); miembros.push('♭3'); }
+      notas.push(rel(T, 4, 'A')); miembros.push('♯4');
+      g = 5; funcion = 'S'; nombreEsp = `sexta aumentada ${SEXTAS[c.esp]}`;
+    }
+    const q = c.esp && SEXTAS[c.esp] ? {tri: '?', sep: null} : calidadNotas(notas);
+    // notas con tendencia: las alteradas respecto de la tonalidad en acordes cromáticos
+    const tendencias = {};
+    if (c.esp) notas.forEach((n, i) => { const d = n.a - A.alteracionPorDefecto(K, n.l); if (d && !(K.modo === 'menor' && c.esp === 'mix' && A.gradoDe(K, n.l) === 6)) tendencias[i] = Math.sign(d); });
+    let romano;
+    if (c.esp && SEXTAS[c.esp]) romano = {It: 'It', Fr: 'Fr', Al: 'Al'}[c.esp];
+    else if (c.esp === 'N') romano = 'N';
+    else if (c.esp === 'sec') romano = c.base[0] === 'V' ? 'V' : c.base === 'viiø7' ? 'viiø' : 'vii°';
+    else romano = numeral(g, q, q.sep, bemol);
+    return {notas, miembros, g, funcion, q, romano, sufijo, nombreEsp, tendencias, nov: !!c.nov,
+            sept: notas.length >= 4 && !(c.esp && SEXTAS[c.esp]), aumentada: !!(c.esp && SEXTAS[c.esp])};
+  };
+  A.notasAcorde = (K, c) => A.info(K, c).notas;
+  A.calidad = (K, c) => A.info(K, c).q.tri;
+  const SUP = {'6': '⁶', '7': '⁷', '4': '⁴', '5': '⁵', '3': '³', '2': '²', '9': '⁹', '+': '⁺'};
   A.CIFRA = {false: ['', '6', '64'], true: ['7', '65', '43', '42']};
-  // Numeral romano con cifrado (V⁷, I⁶, ii⁶, vii°⁶, I⁶₄…)
+  const cifraDe = (c, inf) => inf.aumentada ? '+6' : inf.nov ? '9' : c.esp === 'N' && c.inv === 1 ? '6' : (A.CIFRA[!!inf.sept][c.inv] || '');
+  // Numeral romano con cifrado (V⁷, I⁶, ii⁶, vii°⁶, I⁶₄, V⁷/V, N⁶, It⁺⁶…)
   A.romano = (K, c, op = {}) => {
-    const q = A.calidad(K, c);
-    let r = ROMANO[c.g];
-    if (q === 'm' || q === 'd') r = r.toLowerCase();
-    if (q === 'd') r += c.sept ? 'ø' : '°';
-    if (q === 'A') r += '+';
-    if (c.sept && q === 'd' && K.modo === 'menor' && c.g === 6) r = r.replace('ø', '°');
-    if (op.sinCifra) return r;
-    const cif = A.CIFRA[!!c.sept][c.inv] || '';
-    if (op.texto) return r + cif;
-    if (cif.length === 2) return `${r}<span class="cif"><sup>${cif[0]}</sup><sub>${cif[1]}</sub></span>`;
-    return r + (cif ? `<sup>${cif}</sup>` : '');
+    const inf = A.info(K, c);
+    if (op.sinCifra) return inf.romano + inf.sufijo;
+    const cif = cifraDe(c, inf);
+    if (op.texto) return inf.romano + cif + inf.sufijo;
+    if (cif.length === 2 && cif !== '+6') return `${inf.romano}<span class="cif"><sup>${cif[0]}</sup><sub>${cif[1]}</sub></span>${inf.sufijo}`;
+    return inf.romano + (cif ? `<sup>${cif}</sup>` : '') + inf.sufijo;
   };
-  A.romanoTexto = (K, c) => A.romano(K, c, {sinCifra: true}) + (A.CIFRA[!!c.sept][c.inv] || '').split('').map(x => SUP[x] || x).join('');
+  A.romanoTexto = (K, c) => { const inf = A.info(K, c); return inf.romano + cifraDe(c, inf).split('').map(x => SUP[x] || x).join('') + inf.sufijo; };
   const CAL_NOMBRE = {M: 'mayor', m: 'menor', d: 'disminuido', A: 'aumentado'};
+  const SEP_NOMBRE = {'7': 'con séptima', 'maj7': 'con séptima mayor', 'ø7': 'semidisminuido (séptima menor)', '°7': 'disminuido (séptima disminuida)'};
   A.nombreAcorde = (K, c) => {
-    const f = A.notasAcorde(K, c)[0];
-    const q = A.calidad(K, c);
-    if (c.sept) return `${M.nombre(f)} ${q === 'M' ? 'con séptima (dominante)' : q === 'd' ? 'disminuido con séptima' : 'con séptima'}`;
-    return `${M.nombre(f)} ${CAL_NOMBRE[q] || ''}`;
+    const inf = A.info(K, c);
+    if (inf.aumentada) return `Sexta aumentada ${SEXTAS[c.esp]} (${inf.notas.map(x => M.corto(x)).join('–')})`;
+    const f = inf.notas[0];
+    let t = `${M.nombre(f)} ${CAL_NOMBRE[inf.q.tri] || ''}`;
+    if (inf.q.sep) t = `${M.nombre(f)} ${inf.q.sep === '7' && inf.q.tri === 'M' ? (inf.nov ? 'con séptima y novena (dominante)' : 'con séptima (dominante)') : inf.q.sep === '°7' || inf.q.sep === 'ø7' ? SEP_NOMBRE[inf.q.sep] : (CAL_NOMBRE[inf.q.tri] || '') + ' ' + SEP_NOMBRE[inf.q.sep]}`;
+    return t.trim() + (inf.nombreEsp ? ` · ${inf.nombreEsp}` : '');
   };
+  A.mismoAcorde = (a, b) => !!a && !!b && (a.esp || '') === (b.esp || '') && a.inv === b.inv &&
+    (a.esp === 'sec' ? a.base === b.base && a.de === b.de : a.esp === 'N' || (a.esp && SEXTAS[a.esp]) ? true : a.g === b.g && !!a.sept === !!b.sept && !!a.nov === !!b.nov);
   A.INVERSION = ['estado fundamental', 'primera inversión', 'segunda inversión', 'tercera inversión'];
 
   // ---------- Funciones y progresiones ----------
@@ -109,34 +177,48 @@
 
   // ---------- Identificación de un acorde a partir de sus voces ----------
   const igualNombre = (x, y) => x.l === y.l && x.a === y.a;
+  // Acordes posibles en una tonalidad: diatónicos (tríadas, séptimas, novena de dominante)
+  // y cromáticos (dominantes secundarias, intercambio modal, napolitana, sextas aumentadas)
+  const cacheCand = {};
   A.candidatos = K => {
+    const k = A.claveTon(K);
+    if (cacheCand[k]) return cacheCand[k];
     const out = [];
     for (let g = 0; g < 7; g++) [false, true].forEach(sept => out.push({g, sept}));
-    return out;
+    out.push({g: 4, sept: true, nov: true});
+    const destinos = K.modo === 'mayor' ? [1, 2, 3, 4, 5] : [2, 3, 4, 5, 6];
+    destinos.forEach(de => ['V', 'V7', 'vii', 'vii7'].forEach(base => out.push({esp: 'sec', base, de})));
+    if (K.modo === 'mayor') [[0, false], [1, false], [1, true], [2, false], [3, false], [5, false], [6, false], [6, true]].forEach(([g, sept]) => out.push({esp: 'mix', g, sept}));
+    else [[0, false], [3, false]].forEach(([g, sept]) => out.push({esp: 'mix', g, sept}));
+    ['N', 'It', 'Fr', 'Al'].forEach(esp => out.push({esp}));
+    return (cacheCand[k] = out);
   };
   // Devuelve {acorde, miembro: {S,A,T,B}, presentes, ajenas, inv} o null si no hay notas
-  A.identificar = (K, col) => {
+  A.identificar = (K, col, op = {}) => {
     const voces = A.VOCES.filter(v => col[v]);
     if (!voces.length) return null;
     let mejor = null;
     A.candidatos(K).forEach(c => {
-      const ns = A.notasAcorde(K, {g: c.g, inv: 0, sept: c.sept});
-      const miembro = {};
+      const inf = A.info(K, Object.assign({inv: 0}, c));
+      const ns = inf.notas;
+      const miembro = {}, idx = {};
       let ok = 0;
-      voces.forEach(v => { const i = ns.findIndex(n => igualNombre(n, col[v])); if (i >= 0){ miembro[v] = A.MIEMBROS[i]; ok++; } });
-      const tieneSept = Object.values(miembro).includes('7');
-      if (c.sept && !tieneSept) return;            // un acorde de séptima necesita la séptima
+      voces.forEach(v => { const i = ns.findIndex(n => igualNombre(n, col[v])); if (i >= 0){ miembro[v] = inf.miembros[i]; idx[v] = i; ok++; } });
       const pres = new Set(Object.values(miembro));
-      const punt = ok*10 + (pres.has('F') ? 3 : 0) + (pres.has('3') ? 2 : 0) + (col.B && miembro.B === 'F' ? 1 : 0) - (c.sept ? 1 : 0);
-      if (!mejor || punt > mejor.punt) mejor = {punt, g: c.g, sept: c.sept, miembro, ok};
+      // un acorde de séptima (o novena) necesita la séptima (y la novena); una sexta aumentada, sus notas propias
+      if (inf.sept && !inf.aumentada && !pres.has('7')) return;
+      if (c.nov && !pres.has('9')) return;
+      if (inf.aumentada && (!pres.has('♭6') || !pres.has('♯4') || (c.esp === 'Fr' && !pres.has('2')) || (c.esp === 'Al' && !pres.has('♭3')))) return;
+      let punt = ok*10 + (pres.has('F') || inf.aumentada ? 3 : 0) + (pres.has('3') || inf.aumentada ? 2 : 0) + (col.B && idx.B === 0 ? 1 : 0) - (c.sept ? 1 : 0) - (c.nov ? 1 : 0);
+      if (c.esp) punt -= c.esp === 'mix' && op.preferirMix ? 2.4 : 2.5;   // ante la duda, el diatónico
+      if (!mejor || punt > mejor.punt) mejor = {punt, c, inf, miembro, idx, ok};
     });
     const ajenas = voces.filter(v => !mejor.miembro[v]);
-    const mb = col.B ? mejor.miembro.B : null;
-    const inv = mb === 'F' ? 0 : mb === '3' ? 1 : mb === '5' ? 2 : mb === '7' ? 3 : 0;
-    const acorde = {g: mejor.g, inv, sept: mejor.sept};
+    const inv = col.B && mejor.idx.B !== undefined ? Math.min(mejor.idx.B, 3) : 0;
+    const acorde = Object.assign({}, mejor.c, {inv});
     const presentes = new Set(Object.values(mejor.miembro));
     // reconocido: al menos dos voces forman parte de un acorde de la tonalidad
-    return {acorde, miembro: mejor.miembro, presentes, ajenas, completo: voces.length === 4, reconocido: mejor.ok >= 2};
+    return {acorde, info: mejor.inf, miembro: mejor.miembro, presentes, ajenas, completo: voces.length === 4, reconocido: mejor.ok >= 2};
   };
 
   // ---------- Intervalos entre voces y movimiento ----------
@@ -254,6 +336,30 @@
     como: 'Revisá las alteraciones: usá las de la armadura (y la sensible elevada en menor).'});
   regla('cifrado',    {sev: 'error', tipo: 'regla', titulo: 'No es el acorde pedido',
     porque: 'El cifrado indica qué acorde y en qué inversión va en ese lugar.', como: 'Escribí las notas del acorde indicado, con la nota pedida en el bajo.'});
+  regla('dup-tendencia', {sev: 'error', tipo: 'regla', titulo: 'Nota alterada duplicada',
+    porque: 'Las notas alteradas cromáticamente (la sensible secundaria, el ♭6 y el ♯4 de las sextas aumentadas, el ♭2 napolitano) tienen una dirección obligada. Duplicadas, las dos voces irían al mismo lugar en octavas paralelas, o una tendría que contradecir su tendencia.',
+    como: 'Dejá la nota alterada en una sola voz y duplicá otra (en general la fundamental, o en la napolitana, la tercera).'});
+  regla('tendencia',  {sev: 'aviso', tipo: 'estilo', titulo: 'La nota alterada no sigue su tendencia',
+    porque: 'Una nota elevada cromáticamente funciona como una sensible y tiende a subir medio tono; una nota bajada tiende a bajar. Si no lo hace, la alteración pierde sentido.',
+    como: 'Llevá la nota elevada medio tono arriba y la bajada medio tono abajo (o mantenela si es nota común con el acorde siguiente).'});
+  regla('falsa-relacion', {sev: 'aviso', tipo: 'estilo', titulo: 'Falsa relación',
+    porque: 'Cuando una nota y su alteración cromática (por ejemplo Fa y Fa♯) aparecen en voces distintas de dos acordes seguidos, el choque se oye como un error. Si el cambio ocurre dentro de la misma voz, suena como un movimiento cromático natural.',
+    como: 'Hacé que la misma voz que tenía la nota natural pase a la alterada (o al revés).'});
+  regla('quintas-mozart', {sev: 'aviso', tipo: 'estilo', titulo: 'Quintas «de Mozart» (sexta alemana → V)',
+    porque: 'La sexta aumentada alemana resuelve al V con quintas paralelas casi inevitables. En la práctica clásica se toleran (aparecen en Mozart), pero es más común evitarlas pasando por el I⁶₄ cadencial o usando la sexta italiana o francesa.',
+    como: 'Interpolá un I⁶₄ entre la sexta alemana y el V, o cambiá a una sexta francesa.', excepcion: 'Se toleran en voces interiores o en tiempos débiles.'});
+  regla('resolucion-irregular', {sev: 'info', tipo: 'consejo', titulo: 'Resolución irregular de una dominante secundaria',
+    porque: 'Una dominante secundaria crea la expectativa de su acorde de resolución. Ir a otro acorde (por ejemplo, a otra dominante secundaria o a la cadencia rota) es una resolución irregular: válida, pero hay que escucharla con intención.',
+    como: 'Si querés la resolución normal, el V/x va al acorde x.'});
+  regla('seis-cuatro', {sev: 'aviso', tipo: 'estilo', titulo: 'Acorde de sexta y cuarta fuera de sus usos',
+    porque: 'La segunda inversión es inestable: la cuarta con el bajo suena como una disonancia. En el estilo se usa en cuatro situaciones: cadencial (I⁶₄–V), de paso (el bajo pasa por grado), de bordadura o pedal (el bajo se queda) y arpegiada (el mismo acorde con el bajo moviéndose).',
+    como: 'Usala como I⁶₄ antes del V, o con el bajo por grado conjunto o quieto; si no, preferí el estado fundamental o la primera inversión.'});
+  regla('novena-pos', {sev: 'aviso', tipo: 'estilo', titulo: 'Novena demasiado cerca de la fundamental',
+    porque: 'La novena suena como tal cuando está al menos una novena por encima de la fundamental, normalmente en el soprano. Por debajo o como segunda, choca con la fundamental.',
+    como: 'Poné la novena en el soprano, por encima de la fundamental.'});
+  regla('aum-incompleta', {sev: 'error', tipo: 'regla', titulo: 'Sexta aumentada incompleta',
+    porque: 'Cada tipo de sexta aumentada se define por sus notas: la italiana tiene ♭6, 1 y ♯4 (con la tónica duplicada); la francesa agrega el 2; la alemana, el ♭3.',
+    como: 'Agregá la nota que falta.'});
   A.REGLAS = R;
   A.SEV_ORDEN = {error: 0, aviso: 1, info: 2};
 
@@ -284,21 +390,34 @@
       return out;
     }
     if (voces.length < 4) return out;
-    const c = id.acorde;
+    const c = id.acorde, inf = id.info || A.info(K, c);
     const miembros = A.VOCES.map(v => id.miembro[v]);
     const cuenta = m => miembros.filter(x => x === m).length;
-    if (!cuenta('F')) out.push(mk('sin-fund', [ci], []));
-    if (!cuenta('3')) out.push(mk('sin-tercera', [ci], []));
-    if (c.sept && !cuenta('7')) out.push(mk('sin-septima', [ci], []));
-    if (cuenta('5') === 0 && cuenta('F') >= 2 && cuenta('3') === 1) out.push(mk('sin-quinta', [ci], []));
+    if (inf.aumentada){
+      if (inf.miembros.some(m => !cuenta(m))) out.push(mk('aum-incompleta', [ci], []));
+    } else {
+      if (!cuenta('F')) out.push(mk('sin-fund', [ci], []));
+      if (!cuenta('3')) out.push(mk('sin-tercera', [ci], []));
+      if (inf.sept && !cuenta('7')) out.push(mk('sin-septima', [ci], []));
+      if (!inf.nov && cuenta('5') === 0 && cuenta('F') >= 2 && cuenta('3') === 1) out.push(mk('sin-quinta', [ci], []));
+    }
     // duplicaciones
     const sens = sensibleDe(K);
     const conSensible = A.VOCES.filter(v => igualNombre(col[v], sens));
-    if (conSensible.length > 1 && (c.g === 4 || c.g === 6 || c.g === 2)) out.push(mk('dup-sensible', [ci], conSensible));
-    if (c.sept && cuenta('7') > 1) out.push(mk('dup-septima', [ci], A.VOCES.filter(v => id.miembro[v] === '7')));
-    const q = A.calidad(K, c);
-    if (!c.sept && c.inv === 0 && cuenta('3') >= 2 && q === 'M' && !(opts && opts.rota)) out.push(mk('dup-tercera', [ci], A.VOCES.filter(v => id.miembro[v] === '3')));
-    if (!c.sept && c.inv === 2 && cuenta('5') < 2) out.push(mk('dup-64', [ci], ['B']));
+    const tieneSens = (!c.esp && (c.g === 4 || c.g === 6 || c.g === 2)) || (c.esp === 'mix' && c.g === 6 && c.sept);
+    if (conSensible.length > 1 && tieneSens) out.push(mk('dup-sensible', [ci], conSensible));
+    ['7', '9'].forEach(m => { if (cuenta(m) > 1) out.push(mk('dup-septima', [ci], A.VOCES.filter(v => id.miembro[v] === m))); });
+    Object.keys(inf.tendencias).forEach(i => {
+      const vs = A.VOCES.filter(v => igualNombre(col[v], inf.notas[i]));
+      if (vs.length > 1 && inf.miembros[i] !== '7') out.push(mk('dup-tendencia', [ci], vs, {det: M.corto(inf.notas[i])}));
+    });
+    const q = inf.q.tri;
+    if (!c.esp && !inf.sept && c.inv === 0 && cuenta('3') >= 2 && q === 'M' && !(opts && opts.rota)) out.push(mk('dup-tercera', [ci], A.VOCES.filter(v => id.miembro[v] === '3')));
+    if (!c.esp && !inf.sept && c.inv === 2 && cuenta('5') < 2) out.push(mk('dup-64', [ci], ['B']));
+    if (inf.nov){
+      const v9 = A.VOCES.find(v => id.miembro[v] === '9'), fs = A.VOCES.filter(v => id.miembro[v] === 'F');
+      if (v9 && fs.some(v => midi(col[v9]) - midi(col[v]) < 13)) out.push(mk('novena-pos', [ci], [v9]));
+    }
     return out;
   }
 
@@ -347,9 +466,12 @@
     }
     if (!i1 || !i2 || i1.ajenas.length || i2.ajenas.length) return out;
     const a1 = i1.acorde, a2 = i2.acorde;
+    const f1 = i1.info || A.info(K, a1);
+    const diat = !a1.esp && !a2.esp;
     // sensible: V o vii° hacia I o vi
     const sens = sensibleDe(K), ton = A.notaGrado(K, 0);
-    if ((a1.g === 4 || a1.g === 6) && (a2.g === 0 || a2.g === 5)){
+    const dom1 = (!a1.esp && (a1.g === 4 || a1.g === 6)) || (a1.esp === 'mix' && a1.g === 6 && a1.sept);
+    if (dom1 && (a2.g === 0 || a2.g === 5) && a2.esp !== 'sec' && !(a2.esp && /It|Fr|Al|N/.test(a2.esp))){
       v4.forEach(v => {
         if (!igualNombre(c1[v], sens)) return;
         const d = midi(c2[v]) - midi(c1[v]);
@@ -359,22 +481,41 @@
         else if (a2.g === 0 && d !== 1 && v !== 'B') out.push(mk('sensible-otra', [ci, ci + 1], [v]));
       });
     }
-    // séptima: resuelve bajando por grado
-    if (a1.sept){
+    // séptima (y novena): resuelven bajando por grado
+    v4.forEach(v => {
+      if (i1.miembro[v] !== '7' && i1.miembro[v] !== '9') return;
+      if (f1.aumentada) return;
+      const d = midi(c2[v]) - midi(c1[v]);
+      if (!(d === -1 || d === -2 || d === 0 && (a1.g === a2.g || A.notasAcorde(K, a2).some(n => igualNombre(n, c1[v]))))) out.push(mk('septima', [ci, ci + 1], [v]));
+    });
+    // notas alteradas: la elevada sube, la bajada baja
+    Object.keys(f1.tendencias).forEach(i => {
+      const dir = f1.tendencias[i];
       v4.forEach(v => {
-        if (i1.miembro[v] !== '7') return;
+        if (!igualNombre(c1[v], f1.notas[i]) || f1.miembros[i] === '7') return;
         const d = midi(c2[v]) - midi(c1[v]);
-        if (!(d === -1 || d === -2 || d === 0 && a1.g === a2.g)) out.push(mk('septima', [ci, ci + 1], [v]));
+        const ok = d === 0 || (dir > 0 ? d >= 1 && d <= 2 : d <= -1 && d >= -3);
+        if (!ok && v !== 'B') out.push(mk('tendencia', [ci, ci + 1], [v], {det: `${A.NOMBRE_VOZ_M[v]}: ${M.corto(c1[v])} ${dir > 0 ? 'tiende a subir' : 'tiende a bajar'}`}));
       });
-    }
+    });
+    // falsa relación: la alteración cromática aparece en otra voz
+    const cromatica = v4.some(v => c1[v].l === c2[v].l && c1[v].a !== c2[v].a);
+    if (!cromatica) v4.forEach(x => v4.forEach(y => {
+      if (x === y) return;
+      if (c1[x].l === c2[y].l && c1[x].a !== c2[y].a && !v4.some(z => c2[z].l === c1[x].l && c2[z].a === c1[x].a)) out.push(mk('falsa-relacion', [ci, ci + 1], [x, y], {det: `${M.corto(c1[x])} (${nombreVoz(x)}) y ${M.corto(c2[y])} (${nombreVoz(y)})`}));
+    }));
+    // sexta alemana → V: quintas de Mozart
+    if (a1.esp === 'Al') out.forEach(p => { if (p.regla === 'paralelas-5'){ p.regla = 'quintas-mozart'; p.sev = R['quintas-mozart'].sev; } });
+    // dominante secundaria que no va a su acorde
+    if (a1.esp === 'sec' && !(a2.g === a1.de && a2.esp !== 'sec') && !(a2.esp === 'sec' && a2.de === a1.de)) out.push(mk('resolucion-irregular', [ci, ci + 1], [], {det: `${A.romanoTexto(K, a1)} → ${A.romanoTexto(K, a2)}`}));
     // progresión
-    if (a1.g !== a2.g){
+    if (diat && a1.g !== a2.g){
       const f = A.frecuencia(a1.g, a2.g);
       // solo se señala la retrogresión de la dominante a la subdominante (V–IV, V–ii)
       if (f === 'rara' && A.FUNCION[a1.g] === 'D' && A.FUNCION[a2.g] === 'S' && !(a2.g === 3 && a2.inv === 1)) out.push(mk('retrogresion', [ci, ci + 1], [], {det: `${A.romanoTexto(K, a1)} → ${A.romanoTexto(K, a2)}`}));
     }
     // consejos de conducción (solo cuando hay algo que mejorar)
-    if (v4.length === 4 && a1.g !== a2.g){
+    if (diat && v4.length === 4 && a1.g !== a2.g){
       const mf = A.movimientoFund(a1.g, a2.g);
       if (mf === 'quinta' && a1.inv === 0 && a2.inv === 0){
         const comun = A.notasAcorde(K, a1).find(n1 => A.notasAcorde(K, a2).some(n2 => igualNombre(n1, n2)));
@@ -386,10 +527,25 @@
     return out;
   }
 
+  // Tipo de acorde de sexta y cuarta según el contexto (Piston): cadencial, de paso,
+  // de bordadura o pedal, arpegiado; null si no encaja en ninguno
+  A.TIPOS64 = {cadencial: 'cadencial', paso: 'de paso', pedal: 'de bordadura (pedal)', arpegiado: 'arpegiado'};
+  A.tipo64 = (K, cols, ids, i) => {
+    const b = cols[i].B, pB = i > 0 && cols[i - 1].B, nB = i + 1 < cols.length && cols[i + 1].B;
+    const p = i > 0 ? ids[i - 1] : null, n = i + 1 < ids.length ? ids[i + 1] : null;
+    const a = ids[i].acorde;
+    if (a.g === 0 && n && n.acorde.g === 4 && !n.acorde.esp && nB && midi(nB) % 12 === midi(b) % 12) return 'cadencial';
+    if (pB && nB && midi(pB) === midi(b) && midi(nB) === midi(b)) return 'pedal';
+    if (pB && nB){ const d1 = midi(b) - midi(pB), d2 = midi(nB) - midi(b); if (Math.abs(d1) <= 2 && Math.abs(d2) <= 2 && d1 && d2 && Math.sign(d1) === Math.sign(d2)) return 'paso'; }
+    if ((p && p.acorde.g === a.g && !p.acorde.esp) || (n && n.acorde.g === a.g && !n.acorde.esp)) return 'arpegiado';
+    return null;
+  };
+
   // Cadencia formada por los dos últimos acordes
   A.cadencia = (K, i1, i2, c1, c2, final = true) => {
     if (!i1 || !i2) return null;
     const a = i1.acorde, b = i2.acorde;
+    if (a.esp === 'sec' || b.esp === 'sec') return null;
     if (a.g === 4 && b.g === 0 && a.inv === 0){
       const perf = b.inv === 0 && c2 && c2.S && igualNombre(c2.S, A.notaGrado(K, 0));
       return {id: 'autentica', nombre: perf ? 'Cadencia auténtica perfecta' : 'Cadencia auténtica imperfecta',
@@ -398,17 +554,21 @@
     if (a.g === 6 && b.g === 0) return {id: 'autentica', nombre: 'Cadencia auténtica imperfecta', desc: 'vii° → I: el vii° cumple función de dominante, pero la conclusión es más débil que con el V.'};
     if (a.g === 3 && b.g === 0) return {id: 'plagal', nombre: 'Cadencia plagal', desc: 'IV → I: el «Amén». Concluye de forma suave, sin la tensión de la sensible.'};
     if (a.g === 4 && b.g === 5) return {id: 'rota', nombre: 'Cadencia rota (deceptiva)', desc: 'V → vi: el oído espera el I y llega el vi. Sorprende y prolonga la frase.'};
-    if (b.g === 4 && b.inv === 0 && final) return {id: 'semicadencia', nombre: 'Semicadencia', desc: 'La frase se detiene en la dominante: queda en suspenso, como una pregunta.'};
+    if (K.modo === 'menor' && a.g === 3 && a.inv === 1 && !a.esp && b.g === 4 && !b.esp && final) return {id: 'semicadencia', nombre: 'Semicadencia frigia', desc: 'iv⁶ → V en modo menor: el bajo baja medio tono a la dominante, como en el modo frigio. Muy usada en el Barroco.'};
+    if (b.g === 4 && !b.esp && b.inv === 0 && final) return {id: 'semicadencia', nombre: 'Semicadencia', desc: 'La frase se detiene en la dominante: queda en suspenso, como una pregunta.'};
     return null;
   };
 
   // Análisis completo. cols: columnas; opts.cifrado: lista opcional de acordes pedidos
   A.analizar = (K, cols, opts = {}) => {
     const ids = cols.map(c => A.identificar(K, c));
+    // al final de la frase, el acorde mayor de tónica en menor es tercera de picardía (no V/iv)
+    const ult = ids[ids.length - 1];
+    if (ult && ult.acorde.esp === 'sec' && cols.length > 1){ const alt = A.identificar(K, cols[cols.length - 1], {preferirMix: true}); if (alt.acorde.esp === 'mix') ids[ids.length - 1] = alt; }
     const acordes = ids.map((id, i) => {
       const col = cols[i];
       const lleno = A.VOCES.every(v => col[v]);
-      const rota = i > 0 && ids[i - 1] && ids[i - 1].acorde.g === 4 && id && id.acorde.g === 5;
+      const rota = i > 0 && ids[i - 1] && ids[i - 1].acorde.g === 4 && !ids[i - 1].acorde.esp && id && id.acorde.g === 5;
       return {id, lleno, problemas: problemasAcorde(K, col, id, i, {rota})};
     });
     const enlaces = [];
@@ -421,7 +581,14 @@
     if (opts.cifrado) opts.cifrado.forEach((c, i) => {
       if (!c || !ids[i] || !acordes[i].lleno || ids[i].ajenas.length) return;
       const a = ids[i].acorde;
-      if (a.g !== c.g || a.inv !== c.inv || !!a.sept !== !!c.sept) acordes[i].problemas.push(mk('cifrado', [i], [], {det: `pedido ${A.romanoTexto(K, c)}, escrito ${A.romanoTexto(K, a)}`}));
+      if (!A.mismoAcorde(a, Object.assign({inv: 0}, c))) acordes[i].problemas.push(mk('cifrado', [i], [], {det: `pedido ${A.romanoTexto(K, c)}, escrito ${A.romanoTexto(K, a)}`}));
+    });
+    // usos del acorde de sexta y cuarta
+    ids.forEach((id, i) => {
+      if (!id || id.acorde.esp || id.acorde.inv !== 2 || (id.info && id.info.sept) || !acordes[i].lleno || id.ajenas.length) return;
+      const t = A.tipo64(K, cols, ids, i);
+      id.tipo64 = t;
+      if (!t) acordes[i].problemas.push(mk('seis-cuatro', [i], ['B']));
     });
     const n = cols.length;
     const cad = n >= 2 ? A.cadencia(K, ids[n - 2], ids[n - 1], cols[n - 2], cols[n - 1]) : null;
@@ -435,37 +602,44 @@
 
   // ---------- Realización automática (para ejemplos, pistas y soluciones) ----------
   // Todas las notas posibles de una voz que pertenecen al acorde, dentro de su registro
-  function notasVoz(K, notas, v, holgura = 0){
+  function notasVoz(K, notas, mbs, v, holgura = 0){
     const out = [];
     const [lo, hi] = A.RANGO[v];
     for (let o = 1; o <= 6; o++) notas.forEach((n, i) => {
       const x = {l: n.l, a: n.a, o}, m = midi(x);
-      if (m >= lo - holgura && m <= hi + holgura) out.push(Object.assign(x, {mi: A.MIEMBROS[i]}));
+      if (m >= lo - holgura && m <= hi + holgura) out.push(Object.assign(x, {mi: mbs[i], ix: i}));
     });
     return out;
   }
   const limpia = n => ({l: n.l, a: n.a, o: n.o});
   // Disposiciones válidas de un acorde (respetando las voces fijas)
   A.disposiciones = (K, c, fijas = {}) => {
-    const notas = A.notasAcorde(K, c);
-    const bajoMiembro = A.MIEMBROS[c.inv];
+    const inf = A.info(K, c);
+    const notas = inf.notas, mbs = inf.miembros;
+    const bajoMiembro = mbs[Math.min(c.inv || 0, mbs.length - 1)];
     const cand = {};
     A.VOCES.forEach(v => {
-      if (fijas[v]){ const f = fijas[v]; const i = notas.findIndex(n => igualNombre(n, f)); cand[v] = i >= 0 ? [Object.assign(limpia(f), {mi: A.MIEMBROS[i]})] : []; }
-      else cand[v] = notasVoz(K, notas, v).filter(x => v !== 'B' || x.mi === bajoMiembro);
+      if (fijas[v]){ const f = fijas[v]; const i = notas.findIndex(n => igualNombre(n, f)); cand[v] = i >= 0 ? [Object.assign(limpia(f), {mi: mbs[i], ix: i})] : []; }
+      else cand[v] = notasVoz(K, notas, mbs, v).filter(x => v !== 'B' || x.mi === bajoMiembro);
     });
     const out = [];
     const sens = sensibleDe(K);
+    const requeridos = inf.aumentada ? mbs : ['F', '3', ...(inf.sept ? ['7'] : []), ...(inf.nov ? ['9'] : []), ...(c.esp === 'N' ? ['5'] : [])];
+    const sinDuplicar = new Set(['7', '9', ...Object.keys(inf.tendencias).map(i => mbs[i])]);
+    const tieneSens = (!c.esp && (c.g === 4 || c.g === 6 || c.g === 2)) || (c.esp === 'mix' && c.g === 6 && c.sept);
     cand.B.forEach(b => cand.T.forEach(t => { if (midi(t) < midi(b) || midi(t) - midi(b) > 19) return;
       cand.A.forEach(a => { if (midi(a) < midi(t) || midi(a) - midi(t) > 12) return;
         cand.S.forEach(s => { if (midi(s) < midi(a) || midi(s) - midi(a) > 12) return;
           const ms = [s.mi, a.mi, t.mi, b.mi];
           const cnt = m => ms.filter(x => x === m).length;
-          if (!cnt('F') || !cnt('3') || (c.sept && !cnt('7'))) return;
-          if (c.sept && cnt('7') > 1) return;
-          if ([s, a, t, b].filter(x => igualNombre(x, sens)).length > 1 && (c.g === 4 || c.g === 6 || c.g === 2)) return;
+          if (requeridos.some(m => !cnt(m))) return;
+          if ([...sinDuplicar].some(m => cnt(m) > 1)) return;
+          if ([s, a, t, b].filter(x => igualNombre(x, sens)).length > 1 && tieneSens) return;
           let costo = 0;
-          if (!c.sept){
+          if (inf.aumentada){ if (c.esp === 'It' && cnt('1') < 2) costo += 2; }
+          else if (c.esp === 'N'){ if (cnt('3') < 2) costo += 3; }
+          else if (inf.nov){ if (s.mi !== '9') costo += 15; if ([a, t, b].some(x => x.mi === 'F' && midi(s) - midi(x) < 13)) costo += 12; }
+          else if (!inf.sept){
             if (c.inv === 0 && cnt('3') > 1) costo += A.calidad(K, c) === 'M' ? 6 : 2;
             if (c.inv === 0 && !cnt('5')) costo += 3;
             if (c.inv === 2 && cnt('5') < 2) costo += 6;
@@ -480,18 +654,20 @@
     return out;
   };
   const PESO = {error: 100, aviso: 9, info: 0.5};
+  const cacheInfo = new Map();
+  const infoC = (K, c) => { const k = A.claveTon(K) + JSON.stringify(c); if (!cacheInfo.has(k)) cacheInfo.set(k, A.info(K, c)); return cacheInfo.get(k); };
   function costoEnlace(K, c1, c2, cAc1, cAc2){
-    const i1 = {acorde: cAc1, ajenas: [], miembro: miembrosDe(K, cAc1, c1)};
-    const i2 = {acorde: cAc2, ajenas: [], miembro: miembrosDe(K, cAc2, c2)};
+    const i1 = {acorde: cAc1, ajenas: [], miembro: miembrosDe(K, cAc1, c1), info: infoC(K, cAc1)};
+    const i2 = {acorde: cAc2, ajenas: [], miembro: miembrosDe(K, cAc2, c2), info: infoC(K, cAc2)};
     let costo = 0;
-    problemasEnlace(K, c1, c2, i1, i2, 0).forEach(p => { if (p.regla !== 'retrogresion' && p.regla !== 'nota-comun' && p.regla !== 'segunda-contrario') costo += PESO[p.sev]; });
+    problemasEnlace(K, c1, c2, i1, i2, 0).forEach(p => { if (p.regla !== 'retrogresion' && p.regla !== 'nota-comun' && p.regla !== 'segunda-contrario' && p.regla !== 'resolucion-irregular') costo += p.regla === 'falsa-relacion' || p.regla === 'tendencia' ? 30 : PESO[p.sev]; });
     ['S','A','T'].forEach(v => { costo += Math.abs(midi(c2[v]) - midi(c1[v]))*(v === 'S' ? 0.5 : 0.8); });
     costo += Math.abs(midi(c2.B) - midi(c1.B))*0.15;
     return costo;
   }
   function miembrosDe(K, c, col){
-    const ns = A.notasAcorde(K, c), out = {};
-    A.VOCES.forEach(v => { const i = ns.findIndex(n => igualNombre(n, col[v])); if (i >= 0) out[v] = A.MIEMBROS[i]; });
+    const inf = infoC(K, c), out = {};
+    A.VOCES.forEach(v => { const i = inf.notas.findIndex(n => igualNombre(n, col[v])); if (i >= 0) out[v] = inf.miembros[i]; });
     return out;
   }
   // Realiza una sucesión de acordes. fijas: [{S?, B?, ...}] por columna. azar: ruido para variantes.
@@ -593,6 +769,32 @@
     if ([0, 1, 3, 4].includes(c.g) && Math.random() < prob) return Object.assign({}, c, {inv: 1});
     return c;
   });
+
+  // ---------- Modulación ----------
+  // Tonalidades vecinas: las que difieren en a lo sumo una alteración (relativa, dominante,
+  // subdominante y sus relativas)
+  A.vecinas = K => {
+    const out = [];
+    [K.arm, K.arm + 1, K.arm - 1].forEach(n => ['mayor', 'menor'].forEach(m => { if (!(n === K.arm && m === K.modo) && Math.abs(n) <= 7) out.push(A.tonalidad(n, m)); }));
+    return out;
+  };
+  const claveNotas = ns => ns.map(n => `${n.l}:${n.a}`).sort().join(',');
+  // Acordes (tríadas diatónicas) comunes a dos tonalidades: los candidatos a acorde pivote
+  A.acordesComunes = (K1, K2) => {
+    const out = [];
+    for (let g1 = 0; g1 < 7; g1++){
+      const k1 = claveNotas(A.notasAcorde(K1, {g: g1, inv: 0}));
+      for (let g2 = 0; g2 < 7; g2++) if (claveNotas(A.notasAcorde(K2, {g: g2, inv: 0})) === k1) out.push({g1, g2});
+    }
+    return out;
+  };
+  // Grado de una tonalidad respecto de otra (para nombrar la nueva tonalidad: «V», «vi»…)
+  A.relacion = (K1, K2) => {
+    const g = A.gradoDe(K1, K2.tonica.l);
+    const n = A.notaGrado(K1, g);
+    const base = ROMANO[g];
+    return (n.a !== K2.tonica.a ? (K2.tonica.a > n.a ? '♯' : '♭') : '') + (K2.modo === 'mayor' ? base : base.toLowerCase());
+  };
 
   // Texto de una lista de problemas, para las explicaciones
   A.describir = (K, p) => {

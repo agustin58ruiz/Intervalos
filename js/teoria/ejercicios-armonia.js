@@ -34,7 +34,7 @@
   const tonalidad = o => o.mayor ? A.TONALIDADES.filter(K => K.modo === 'mayor' && Math.abs(K.arm) <= 2)[entre(0, 4)] : azar(A.TONALIDADES.filter(K => Math.abs(K.arm) <= 3));
   const ver = (K, cols, o = {}) => el => ED.crear(el, Object.assign({K, cols, soloLectura: true, panel: false, sinCifra: true, sinMarcas: true}, o));
   const analizado = (K, cols, o = {}) => el => ED.crear(el, Object.assign({K, cols, soloLectura: true, panel: false}, o));
-  const MIEMBRO = {F: 'la fundamental', '3': 'la tercera', '5': 'la quinta', '7': 'la séptima'};
+  const MIEMBRO = {F: 'la fundamental', '3': 'la tercera', '5': 'la quinta', '7': 'la séptima', '9': 'la novena'};
 
   // ---------- ¿Qué acorde es? ----------
   tipo('h-grado', {nombre: 'Nombrar acordes (numerales romanos)', hab: 'h-acordes', leccion: 'h-acordes', gen(o){
