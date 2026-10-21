@@ -227,7 +227,7 @@
   // ======================================================================
   // Navegación
   // ======================================================================
-  const SECCIONES = ['aprender', 'practicar', 'intervalos', 'evaluar', 'ritmo', 'oido'];
+  const SECCIONES = ['aprender', 'practicar', 'intervalos', 'evaluar', 'ritmo', 'armonia', 'oido'];
   let seccion = 'aprender';
   function ir(s, opts = {}){
     seccion = s;
@@ -243,6 +243,7 @@
     if (s === 'practicar' && !opts.sinRender) hubPracticar();
     if (s === 'evaluar' && !opts.sinRender) introEvaluacion();
     if (s === 'ritmo' && !opts.sinRender) hubRitmo();
+    if (s === 'armonia' && !opts.sinRender) ArmoniaApp.mostrar($('sec-armonia'));
     if (!opts.sinScroll) window.scrollTo({top: 0});
   }
   SECCIONES.forEach(x => $('nav-' + x).addEventListener('click', () => ir(x)));
@@ -461,14 +462,24 @@
     ['r-especial', 'Síncopa, tresillo y anacrusa'],
     ['r-dictado', 'Dictado rítmico'], ['r-dictado', 'Dictado rítmico']
   ];
+  const PLAN_ARMONIA = [
+    ['h-grado', 'Acordes e inversiones'], ['h-grado', 'Acordes e inversiones'],
+    ['h-funcion', 'Funciones tonales'], ['h-funcion', 'Funciones tonales'],
+    ['h-duplicacion', 'Duplicación y disposición'], ['h-duplicacion', 'Duplicación y disposición'],
+    ['h-movimiento', 'Tipos de movimiento'], ['h-movimiento', 'Tipos de movimiento'],
+    ['h-error', 'Conducción de voces'], ['h-error', 'Conducción de voces'], ['h-error', 'Conducción de voces'],
+    ['h-cadencia', 'Cadencias'], ['h-cadencia', 'Cadencias', {auditivo: true}]
+  ];
   // Qué evaluar: las evaluaciones anteriores a la unidad de ritmo eran todas de notas e intervalos
   const ALCANCES = {
-    todo:    {nombre: 'Todo', plan: () => [...PLAN, ...[0, 2, 4, 5, 7, 9, 10, 11].map(i => PLAN_RITMO[i])], unidades: null,
-              desc: 'Combina lectura de notas, intervalos, armaduras, tonalidades, reconocimiento auditivo y ritmo (figuras, compás, puntillo, compases compuestos, síncopa y dictado).'},
-    alturas: {nombre: 'Notas e intervalos', plan: () => PLAN, unidades: u => u.id !== 'ritmo',
+    todo:    {nombre: 'Todo', plan: () => [...PLAN, ...[0, 2, 4, 5, 7, 9, 10, 11].map(i => PLAN_RITMO[i]), ...[0, 2, 8, 11].map(i => PLAN_ARMONIA[i])], unidades: null,
+              desc: 'Combina lectura de notas, intervalos, armaduras, tonalidades, reconocimiento auditivo y ritmo (figuras, compás, puntillo, compases compuestos, síncopa y dictado). También acordes, conducción de voces y cadencias.'},
+    alturas: {nombre: 'Notas e intervalos', plan: () => PLAN, unidades: u => u.id !== 'ritmo' && u.id !== 'armonia',
               desc: 'Combina lectura de notas, intervalos (identificar y construir), armaduras, tonalidades, alteraciones accidentales, intervalos con armadura y reconocimiento auditivo.'},
     ritmo:   {nombre: 'Ritmo', plan: () => PLAN_RITMO, unidades: u => u.id === 'ritmo',
-              desc: 'Combina tempo, figuras y silencios, equivalencias, cifra indicadora, completar compases, puntillo y ligadura, compases compuestos, síncopa y tresillos, y dictado rítmico.'}
+              desc: 'Combina tempo, figuras y silencios, equivalencias, cifra indicadora, completar compases, puntillo y ligadura, compases compuestos, síncopa y tresillos, y dictado rítmico.'},
+    armonia: {nombre: 'Armonía', plan: () => PLAN_ARMONIA, unidades: u => u.id === 'armonia',
+              desc: 'Combina acordes e inversiones, funciones tonales, duplicación, tipos de movimiento, errores de conducción (paralelas, sensible, cruces, espaciado) y cadencias, también de oído.'}
   };
   let alcance = P.evaluaciones().length ? 'alturas' : 'todo';   // quien ya tenía evaluaciones ve primero su historial
   try { const a = localStorage.getItem('teoria-alcance'); if (ALCANCES[a]) alcance = a; } catch(e){}

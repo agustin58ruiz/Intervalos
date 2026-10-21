@@ -85,3 +85,20 @@ El objetivo es que el navegador la trate como un reproductor de música: que sig
 ## Evaluación
 
 Preguntas sin ayudas, con tres alcances: todo, notas e intervalos (18) o ritmo (13). El historial y la comparación con la evaluación anterior se muestran por alcance (las evaluaciones guardadas antes de la unidad de ritmo cuentan como «notas e intervalos»). Al final muestra el porcentaje, el tiempo, los conceptos dominados y los que tuvieron errores, la comparación con la evaluación anterior, recomendaciones según los diagnósticos y la revisión de cada respuesta con su explicación.
+
+## Armonía y conducción de voces
+
+```
+js/teoria/
+  armonia.js             Núcleo: tonalidades y grados (menor armónica), acordes, numerales, identificación
+                         de un acorde a partir de las cuatro voces, reglas de conducción, cadencias,
+                         tabla de progresiones de Piston y un realizador automático
+  armonia-editor.js      Editor SATB en dos pentagramas (VexFlow) con análisis en tiempo real y audio por voz
+  ejercicios-armonia.js  Ejercicios de opción múltiple (contrato de ejercicios.js) y habilidades h-*
+  lecciones-armonia.js   Unidad «Armonía y conducción de voces» (se agrega con Lecciones.agregarUnidad)
+  armonia-app.js         Sección Armonía: recorrido, desafíos por niveles, editor libre y progreso
+```
+
+- **Reglas** (`Armonia.REGLAS`): cada una tiene severidad (`error` = regla general, `aviso` = preferencia de estilo, `info` = excepción aceptada o consejo), el porqué musical y cómo corregirla. `Armonia.analizar(K, columnas)` devuelve los acordes identificados, los movimientos entre cada par de voces, los problemas y la cadencia.
+- **Realizador** (`Armonia.realizar`): genera las disposiciones válidas de cada acorde y elige la mejor sucesión con programación dinámica, usando las mismas reglas como costo (más el tamaño de los movimientos). Se usa para los ejemplos, las soluciones y las pistas, y para generar ejercicios; cualquier otra solución que cumpla las reglas se acepta.
+- **Progreso**: las respuestas alimentan las Betas de las habilidades `h-*` del aula; los desafíos guardan en `armonia-progreso` los resueltos por nivel y las reglas que más se rompen.
