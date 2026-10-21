@@ -26,6 +26,10 @@ Publicada en GitHub Pages: https://agustin58ruiz.github.io/Intervalos/
   - *Editor libre* con progresiones de ejemplo y *Progreso* (niveles, habilidades y errores más frecuentes).
 - **Oído**: el entrenamiento auditivo original (adivinar intervalos, conocer intervalos y lectura rápida de notas) y una **playlist de intervalos** para aprender escuchando: cada intervalo suena tres veces desde Do, hay una pausa para adivinarlo, una voz dice cuál era y a los 3 segundos sigue otro. Se elige la forma (ascendente, descendente, juntas o una de cada), la pausa (3, 5 u 8 segundos) y qué intervalos entran. Funciona como un reproductor: sigue sonando con la pantalla bloqueada o en otra pestaña y se maneja desde los controles multimedia del sistema.
 
+## Pendiente
+
+- **Entrada con teclado MIDI** para resolver los ejercicios de armonía tocando: diseño y plan de implementación en [docs/PLAN-MIDI.md](docs/PLAN-MIDI.md).
+
 ## Cómo funciona por dentro
 
 Ver [docs/ARQUITECTURA.md](docs/ARQUITECTURA.md).
