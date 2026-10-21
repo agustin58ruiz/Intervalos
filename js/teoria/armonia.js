@@ -645,8 +645,9 @@
             if (c.inv === 2 && cnt('5') < 2) costo += 6;
             if (c.inv === 1 && cnt('3') > 1) costo += 2;
           } else if (!cnt('5')) costo += 1;
-          // registro central preferido
+          // registro central preferido; se evitan los unísonos (no se pueden tocar en el piano)
           costo += Math.abs(midi(s) - 70)*0.05 + Math.abs(midi(b) - 50)*0.05;
+          if (midi(s) === midi(a) || midi(a) === midi(t) || midi(t) === midi(b)) costo += 5;
           out.push({col: {S: limpia(s), A: limpia(a), T: limpia(t), B: limpia(b)}, costo});
         });
       });

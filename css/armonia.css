@@ -77,3 +77,29 @@
 
 #sec-armonia>.tabs{display:flex;flex-wrap:wrap;border-radius:14px}
 #sec-armonia>.tabs button{flex:1 1 auto;padding:8px 12px}
+
+/* MIDI */
+.midi-panel{background:var(--surface);border:1.5px solid var(--line);border-radius:12px;padding:8px 12px;margin:0 0 12px;font-size:.9rem}
+.midi-cab{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.midi-cab small{color:var(--muted)}
+.midi-btn{margin-left:auto;padding:7px 12px;font-size:.85rem}
+.midi-luz{width:10px;height:10px;border-radius:50%;background:var(--line);flex:none;transition:transform .08s}
+.midi-luz.medio{background:var(--first)}
+.midi-luz.on{background:var(--ok)}
+.midi-luz.pulso{transform:scale(1.6);box-shadow:0 0 0 3px color-mix(in srgb,var(--ok) 35%,transparent)}
+.midi-det{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;margin-top:6px}
+.midi-det select,.midi-cap select{font:inherit;font-size:.85rem;color:var(--ink);background:var(--paper);border:1.5px solid var(--line);border-radius:999px;padding:4px 8px}
+.midi-det .chk{margin:0;font-size:.85rem}
+.midi-cap{font-size:.85rem;color:var(--muted)}
+.midi-aviso{margin:6px 0 0;font-size:.85rem;color:var(--muted)}
+.midi-aviso:empty{display:none}
+.ae-midi{font-size:.85rem;margin:6px 0 0;padding:6px 10px;border-radius:8px;background:color-mix(in srgb,var(--second) 9%,var(--surface))}
+.btn.grabando{border-color:var(--bad);color:var(--bad)}
+.ar-comp td.dif{background:color-mix(in srgb,var(--first) 14%,var(--surface))}
+.ar-comp td{white-space:nowrap;font-size:.8rem}
+@media (prefers-reduced-motion: reduce){.midi-luz{transition:none}}
+
+/* Piano */
+.pi-area{margin:4px 0 8px}
+.pi-tk{margin:6px 0}
+.pi-info{font-size:.9rem;color:var(--muted);margin:4px 0}

@@ -28,6 +28,8 @@
     let foco = null;            // problema resaltado
     let sonando = -1, timers = [];
     let an = null, geo = null;
+    let previa = null;          // acorde que se está tocando en el teclado MIDI, todavía sin confirmar
+    let api = null;
     el.innerHTML = '';
     const raiz = h('div', 'ae' + (op.soloLectura ? ' ae-lectura' : '')); el.appendChild(raiz);
 
@@ -194,7 +196,8 @@
       const notasVF = [];
       staves.forEach((s, i) => {
         const hacer = (v, clave, dir) => {
-          const nt = cols[i][v];
+          const prev = previa && i === sel.c && previa[v] && editable(i, v);
+          const nt = prev ? previa[v] : cols[i][v];
           if (!nt) return new VF.GhostNote({duration: 'h'});
           const sn = new VF.StaveNote({clef: clave, keys: ['cdefgab'[nt.l] + '/' + nt.o], duration: 'h', stem_direction: dir});
           if (nt.a !== M.alteracionArmadura(K.arm, nt.l)) sn.addModifier(new VF.Accidental(VF_ACC[nt.a]), 0);
@@ -204,6 +207,7 @@
           if (i === sel.c && v === sel.v && !op.soloLectura) col = V.cssVar('--second');
           if (enFoco && enFoco.has(k)) col = colorSev[foco.sev] || col;
           if (op.resaltar && op.resaltar.voces.includes(v) && (!op.resaltar.cols || op.resaltar.cols.includes(i))) col = V.cssVar('--first');
+          if (prev) col = rgba(V.cssVar('--second'), 0.55);
           sn.setStyle({fillStyle: col, strokeStyle: col});
           sn.setLedgerLineStyle({strokeStyle: ink});
           return sn;
@@ -353,8 +357,76 @@
     function tocarAcorde(c){ parar(); const ms = A.VOCES.map(v => cols[c][v]).filter(Boolean).map(M.midi); if (ms.length) Sonido.acorde(ms); }
     function tocarVoz(voces, desde = 0, cuantos = cols.length){ tocarTodo(desde, cuantos, voces); }
 
+    // ---------- Entrada MIDI ----------
+    // Las notas sostenidas se ven tenues en el acorde actual; al confirmar el acorde (al soltar
+    // o al mantenerlo, según la configuración) se escribe y se pasa al siguiente.
+    const midiInfo = h('p', 'ae-midi'); midiInfo.setAttribute('aria-live', 'polite');
+    let raf = 0;
+    const redibujar = () => { if (raf) return; raf = requestAnimationFrame(() => { raf = 0; dibujar(); }); };
+    const fijasDe = c => { const o = {}; A.VOCES.forEach(v => { if (!editable(c, v) && cols[c][v]) o[v] = cols[c][v]; }); return o; };
+    const esperado = c => (op.cifrado && op.cifrado[c]) || null;
+    const vocesLibres = c => A.VOCES.filter(v => editable(c, v));
+    function siguienteColumna(c){
+      for (let j = c + 1; j < cols.length; j++) if (vocesLibres(j).length) return j;
+      if (op.grabar && op.grabar()){ cols.push({S: null, A: null, T: null, B: null}); fijas.push({}); return cols.length - 1; }
+      return null;
+    }
+    function vistaPrevia(teclas){
+      if (!teclas.size){ previa = null; redibujar(); return; }
+      const r = MidiCaptura.asignar([...teclas], {fijas: fijasDe(sel.c), anterior: cols[sel.c - 1]});
+      previa = r.voces ? MidiCaptura.columna(K, r.voces, esperado(sel.c)) : null;
+      redibujar();
+    }
+    function recibir(a){
+      previa = null;
+      const c = sel.c;
+      if (!vocesLibres(c).length){ midiInfo.textContent = 'En este acorde todas las voces están dadas: pasá al siguiente con →.'; dibujar(); return; }
+      let texto;
+      if (a.notas.length === 1){
+        // una sola nota: va a la voz elegida (para escribir voz por voz)
+        const v = editable(c, sel.v) ? sel.v : vocesLibres(c)[0];
+        const nn = MidiCaptura.deletrear(K, a.notas[0], {notas: esperado(c) ? A.notasAcorde(K, esperado(c)) : null});
+        cols[c][v] = nn;
+        texto = `${A.NOMBRE_VOZ_M[v]} del acorde ${c + 1}: ${M.corto(nn, {oct: true})}`;
+        const vacia = vocesLibres(c).find(x => !cols[c][x]);
+        if (vacia) sel.v = vacia;
+        else { const sig = siguienteColumna(c); if (sig !== null){ sel.c = sig; sel.v = vocesLibres(sig)[0]; } }
+        cambiar();
+      } else {
+        const r = MidiCaptura.asignar(a.notas, {fijas: fijasDe(c), anterior: cols[c - 1]});
+        if (!r.voces){ midiInfo.textContent = r.avisos.join(' '); dibujar(); return; }
+        const col = MidiCaptura.columna(K, r.voces, esperado(c));
+        vocesLibres(c).forEach(v => { cols[c][v] = col[v]; });
+        const durs = Object.values(a.dur || {}).filter(Boolean);
+        const dur = durs.length ? ` · duración ${(durs.reduce((x, y) => x + y, 0)/durs.length/1000).toFixed(2).replace('.', ',')} s` : '';
+        texto = `Acorde ${c + 1}: ${A.VOCES.map(v => cols[c][v] ? M.corto(cols[c][v], {oct: true}) : '—').join(' · ')}${dur}${r.avisos.length ? ' — ' + r.avisos.join(' ') : ''}`;
+        const sig = siguienteColumna(c);
+        if (sig !== null){ sel.c = sig; sel.v = vocesLibres(sig)[0] || sel.v; }
+        cambiar();
+      }
+      midiInfo.innerHTML = texto;
+      if (op.alIngresar) op.alIngresar(c, an, copia(cols));
+    }
+    if (!op.soloLectura && window.Midi && window.MidiCaptura){
+      lienzo.after(midiInfo);
+      const cap = MidiCaptura.crear({modo: Midi.config.captura, estableMs: Midi.config.estableMs,
+        esperadas: () => Math.max(1, vocesLibres(sel.c).length), alCambio: vistaPrevia, alAcorde: recibir});
+      let fuera = [];
+      const vivo = () => { if (!raiz.isConnected){ fuera.forEach(f => f()); return false; } return ED.activo === api; };
+      fuera = [Midi.on('nota', ev => { if (vivo()) cap.nota(ev); }), Midi.on('pedal', ev => { if (vivo()) cap.pedal(ev.abajo); }),
+               Midi.on('estado', () => { if (raiz.isConnected) pintarMidi(); })];
+      raiz.addEventListener('pointerdown', () => { ED.activo = api; pintarMidi(); });
+      raiz.addEventListener('focusin', () => { ED.activo = api; pintarMidi(); });
+    }
+    function pintarMidi(){
+      if (op.soloLectura || !window.Midi) return;
+      const listo = Midi.estado() === 'listo';
+      midiInfo.hidden = !listo;
+      if (listo && !midiInfo.innerHTML) midiInfo.innerHTML = `🎹 Tocá el acorde ${sel.c + 1} en el teclado (o una nota para la voz elegida).`;
+    }
+
     pintar();
-    return {
+    api = {
       cols: () => copia(cols),
       analisis: () => an,
       set(nuevas){ cols = copia(nuevas); foco = null; pintar(); },
@@ -362,9 +434,18 @@
       enfocar(p){ foco = p; if (p) sel.c = p.cols[0]; pintar(); },
       seleccionar(c, v){ sel = {c, v: v || sel.v}; pintar(); },
       tocarTodo, parar,
+      columnaActual: () => sel.c,
+      // escribe un acorde (voces → notas MIDI o escritas) en la columna c, como si se hubiera tocado
+      ingresarAcorde(c, voces){ sel.c = c; recibir({notas: A.VOCES.filter(v => voces[v] !== null && voces[v] !== undefined).map(v => typeof voces[v] === 'number' ? voces[v] : M.midi(voces[v])), dur: {}}); },
+      agregarColumna(){ cols.push({S: null, A: null, T: null, B: null}); fijas.push({}); sel.c = cols.length - 1; pintar(); },
+      quitarColumna(){ if (cols.length > 1){ cols.pop(); fijas.pop(); sel.c = Math.min(sel.c, cols.length - 1); cambiar(); } },
       raiz
     };
+    if (!op.soloLectura) ED.activo = api;
+    pintarMidi();
+    return api;
   };
+  ED.activo = null;
 
   window.ArmoniaEditor = ED;
 })();

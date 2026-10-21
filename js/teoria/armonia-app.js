@@ -118,6 +118,46 @@
                cifrado: p, mostrarCifrado: true, solucion: r.cols,
                objetivo: `Realizá <b>${p.map(c => A.romanoTexto(K, c)).join(' – ')}</b> en ${K.nombre}. En el V⁷ la séptima resuelve bajando un grado y la sensible sube a la tónica; por eso el acorde de tónica que sigue suele quedar sin quinta (con la fundamental triplicada), o el V⁷ se escribe sin quinta.`};
      }}
+    ,
+    {id: 'tocar', titulo: 'Tocar progresiones', nivel: 9,
+     desc: 'Con un teclado MIDI (o con el mouse): tocá cada acorde a cuatro voces y mirá el análisis de cada enlace al instante.',
+     gen(){
+       const K = tonalidad(['mayor', 'menor'], 2);
+       const lista = K.modo === 'mayor'
+         ? [[ac(0), ac(4), ac(0)], [ac(0), ac(3), ac(4), ac(0)], [ac(0), ac(5), ac(1), ac(4), ac(0)], [ac(0), ac(1, 1), ac(4, 0, true), ac(0)], [ac(0), ac(3), ac(0, 2), ac(4), ac(0)]]
+         : [[ac(0), ac(4), ac(0)], [ac(0), ac(3), ac(4), ac(0)], [ac(0), ac(3, 1), ac(4)], [ac(0), ac(5), ac(3), ac(4, 0, true), ac(0)]];
+       const p = azar(lista);
+       const r = A.realizar(K, p, [], {azar: 3, finTonica: p[p.length - 1].g === 0});
+       return {K, prog: p, cols: p.map(() => ({S: null, A: null, T: null, B: null})), fijas: p.map(() => ({})), cifrado: p, mostrarCifrado: true, solucion: r.cols,
+               objetivo: `Tocá <b>${p.map(c => A.romanoTexto(K, c)).join(' – ')}</b> en ${K.nombre}, un acorde por vez, con cuatro notas (bajo con la mano izquierda, tres voces con la derecha). Cada acorde se escribe al soltar las teclas y el cursor pasa al siguiente. Sin teclado MIDI, escribilo con el mouse.`};
+     }},
+    {id: 'secundarias', titulo: 'Dominantes secundarias', nivel: 10,
+     desc: 'Bajos cifrados con V/x, V⁷/x y vii°⁷/x: la sensible secundaria sube y la séptima baja.',
+     gen(){
+       const K = tonalidad(['mayor', 'menor'], 2);
+       const sec = (base, de, inv = 0) => ({esp: 'sec', base, de, inv});
+       const lista = K.modo === 'mayor'
+         ? [[ac(0), sec('V7', 4), ac(4), ac(0)], [ac(0), sec('V', 5), ac(5), ac(1), ac(4), ac(0)], [ac(0), sec('V7', 3), ac(3), ac(4), ac(0)], [ac(0), sec('vii7', 4), ac(4), ac(0)], [ac(0), sec('V7', 1), ac(1), ac(4, 0, true), ac(0)], [ac(0), ac(1, 1), sec('V7', 4, 1), ac(4), ac(0)]]
+         : [[ac(0), sec('V7', 2), ac(2), ac(3), ac(4), ac(0)], [ac(0), sec('V7', 3), ac(3), ac(4), ac(0)], [ac(0), sec('vii7', 4), ac(4), ac(0)]];
+       const p = azar(lista);
+       const r = A.realizar(K, p, [], {azar: 3, finTonica: true});
+       return {K, prog: p, cols: r.cols.map((c, i) => i === 0 ? c : {S: null, A: null, T: null, B: c.B}), fijas: p.map((c, i) => i === 0 ? {S: true, A: true, T: true, B: true} : {B: true}),
+               cifrado: p, mostrarCifrado: true, solucion: r.cols,
+               objetivo: `Realizá <b>${p.map(c => A.romanoTexto(K, c)).join(' – ')}</b> en ${K.nombre}. Una dominante secundaria es el V (o el vii°) de otro grado: su tercera es la sensible de ese grado y sube medio tono; su séptima baja. Evitá la falsa relación: la alteración cromática conviene que aparezca en la misma voz que tenía la nota natural.`};
+     }},
+    {id: 'cromaticos', titulo: 'Napolitana y sextas aumentadas', nivel: 11,
+     desc: 'Acordes alterados de subdominante que llevan con fuerza al V: N⁶, It⁺⁶, Fr⁺⁶ y Al⁺⁶.',
+     gen(){
+       const K = tonalidad(['mayor', 'menor'], 1);
+       const lista = K.modo === 'mayor'
+         ? [[ac(0), ac(3), {esp: 'N', inv: 1}, ac(4), ac(0)], [ac(0), ac(5), {esp: 'It', inv: 0}, ac(4), ac(0)], [ac(0), ac(5), {esp: 'Fr', inv: 0}, ac(4), ac(0)], [ac(0), ac(5), {esp: 'Al', inv: 0}, ac(0, 2), ac(4), ac(0)]]
+         : [[ac(0), {esp: 'N', inv: 1}, ac(4), ac(0)], [ac(0), ac(3), {esp: 'It', inv: 0}, ac(4), ac(0)], [ac(0), ac(3), {esp: 'Fr', inv: 0}, ac(4), ac(0)], [ac(0), ac(5), {esp: 'Al', inv: 0}, ac(0, 2), ac(4), ac(0)]];
+       const p = azar(lista);
+       const r = A.realizar(K, p, [], {azar: 2, finTonica: true});
+       return {K, prog: p, cols: r.cols.map((c, i) => i === 0 ? c : {S: null, A: null, T: null, B: c.B}), fijas: p.map((c, i) => i === 0 ? {S: true, A: true, T: true, B: true} : {B: true}),
+               cifrado: p, mostrarCifrado: true, solucion: r.cols,
+               objetivo: `Realizá <b>${p.map(c => A.romanoTexto(K, c)).join(' – ')}</b> en ${K.nombre}. En la napolitana se duplica la tercera (el bajo) y el ♭2 baja a la sensible. En las sextas aumentadas, el ♭6 (bajo) baja y el ♯4 sube: los dos se abren a la octava de la dominante.`};
+     }}
   ];
   const NIVEL = Object.fromEntries(NIVELES.map(n => [n.id, n]));
 
@@ -143,6 +183,7 @@
     const nivel = NIVEL[nivelId];
     let ej = null, ed = null, ayudas = 0, resuelto = false;
     el.innerHTML = '';
+    if (window.Midi) Midi.panel(el);
     const caja = h('div', 'ar-desafio'); el.appendChild(caja);
     function nuevo(){
       ej = nivel.gen(); ayudas = 0; resuelto = false;
@@ -150,13 +191,32 @@
       caja.appendChild(h('p', 'ar-obj', ej.objetivo));
       const zona = h('div'); caja.appendChild(zona);
       ed = ED.crear(zona, {K: ej.K, cols: ej.cols, fijas: ej.fijas, cifrado: ej.cifrado, mostrarCifrado: ej.mostrarCifrado,
-        onCambio: () => { res.innerHTML = ''; }});
+        onCambio: () => { res.innerHTML = ''; }, alIngresar: (c, an) => alTocar(c, an)});
       const acc = h('div', 'fb-acc ar-acc');
       acc.append(boton('Comprobar', 'primary', comprobar), boton('Pista', 'secondary', pista), boton('Ver una solución', 'secondary', solucion), boton('Otro ejercicio', 'mini', nuevo));
       caja.appendChild(acc);
       const res = h('div', 'ar-res'); res.setAttribute('aria-live', 'polite'); caja.appendChild(res);
       const sol = h('div', 'ar-sol'); caja.appendChild(sol);
       caja._res = res; caja._sol = sol;
+    }
+    // Modo guiado con el teclado: al ingresar cada acorde, se evalúa enseguida su enlace con el
+    // anterior y se propone una alternativa (la nota de la solución de referencia), sin bloquear.
+    function alTocar(c, an){
+      const res = caja._res; res.innerHTML = '';
+      const ps = an.problemas.filter(p => p.cols.includes(c) && p.sev !== 'info');
+      const id = an.ids[c];
+      const nom = id && an.acordes[c].lleno && !id.ajenas.length ? A.romano(ej.K, id.acorde) : '?';
+      if (!ps.length){ res.appendChild(h('div', 'ar-pista', `✓ Acorde ${c + 1} (${nom}): sin problemas${c > 0 ? ' en el enlace con el anterior' : ''}.`)); return; }
+      const ul = h('ul', 'ar-motivos');
+      ps.forEach(p => {
+        const d = A.describir(ej.K, p);
+        const sol = ej.solucion && ej.solucion[c];
+        const alt = sol && p.voces.length ? p.voces.filter(v => ed.cols()[c][v] && sol[v] && M.midi(sol[v]) !== M.midi(ed.cols()[c][v])).map(v => `${A.NOMBRE_VOZ[v]} a ${M.corto(sol[v], {oct: true})}`).join(', ') : '';
+        ul.appendChild(h('li', null, `<b>${d.titulo}</b> (${d.donde}${d.det ? ', ' + d.det : ''}). ${d.porque} <i>${d.como}</i>${alt ? ` Una alternativa: ${alt}.` : ''}`));
+      });
+      res.appendChild(h('div', 'fb-cab bad', `<strong>Acorde ${c + 1} (${nom})</strong>`));
+      res.appendChild(ul);
+      res.appendChild(h('p', 'stats-note', 'Podés seguir tocando: es solo una observación. Para corregir, elegí el acorde con ← → y volvé a tocarlo.'));
     }
     function comprobar(){
       const an = ed.analisis(), res = caja._res;
@@ -219,8 +279,30 @@
       const s = caja._sol; s.innerHTML = '';
       s.appendChild(h('p', 'ar-obj', '<b>Una solución posible</b> (no la única). Compará cómo se mueve cada voz con tu versión.'));
       const z = h('div'); s.appendChild(z);
-      ED.crear(z, {K: ej.K, cols: ej.solucion, soloLectura: true, cifrado: ej.cifrado, mostrarCifrado: ej.mostrarCifrado});
+      const ref = ED.crear(z, {K: ej.K, cols: ej.solucion, soloLectura: true, cifrado: ej.cifrado, mostrarCifrado: ej.mostrarCifrado});
+      comparar(s, ref);
       s.appendChild(boton('Copiar esta solución en mi pentagrama', 'mini', () => { ed.set(ej.solucion); s.innerHTML = ''; }));
+    }
+    // Comparación voz por voz entre mi solución y la de referencia
+    function comparar(s, ref){
+      const mia = ed.cols(), sol = ej.solucion;
+      const mov = (a, b) => { if (!a || !b) return '—'; if (M.midi(a) === M.midi(b)) return '='; const iv = M.intervalo(a, b); return `${M.midi(b) > M.midi(a) ? '↑' : '↓'} ${M.ORDINAL[iv.simple]}${iv.cal ? ' ' + iv.cal : ''}`; };
+      const t = h('table', 'ae-tabla ar-comp');
+      let html = '<thead><tr><th>Voz</th>' + sol.slice(1).map((_, i) => `<th>${i + 1}→${i + 2}<br><small>mía · ref.</small></th>`).join('') + '<th>Escuchar</th></tr></thead><tbody>';
+      A.VOCES.forEach(v => {
+        html += `<tr><td>${A.NOMBRE_VOZ_M[v]}</td>` + sol.slice(1).map((_, i) => { const a = mov(mia[i][v], mia[i + 1][v]), b = mov(sol[i][v], sol[i + 1][v]); return `<td class="${a === b ? '' : 'dif'}">${a} · ${b}</td>`; }).join('') + `<td><button type="button" class="btn ae-ic" data-v="${v}" data-q="m">mía</button> <button type="button" class="btn ae-ic" data-v="${v}" data-q="r">ref.</button></td></tr>`;
+      });
+      t.innerHTML = html + '</tbody>';
+      t.querySelectorAll('[data-v]').forEach(b => b.addEventListener('click', () => (b.dataset.q === 'm' ? ed : ref).tocarTodo(0, sol.length, [b.dataset.v])));
+      s.appendChild(h('p', 'ar-obj', '<b>Comparación:</b> cómo se mueve cada voz en tu versión y en la de referencia (las diferencias, resaltadas). Las dos pueden ser correctas.'));
+      const w = h('div', 'grid-wrap'); w.appendChild(t); s.appendChild(w);
+      const acc = h('div', 'lz-botones');
+      acc.append(boton('▶ Mi solución', 'secondary', () => ed.tocarTodo()), boton('▶ Referencia', 'secondary', () => ref.tocarTodo()),
+        boton('▶ Alternar acorde por acorde', 'secondary', () => {
+          Sonido.parar(); const t0 = Sonido.ahora() + 0.08;
+          sol.forEach((c, i) => { [mia[i], c].forEach((col, k) => A.VOCES.forEach(v => { if (col[v]) Sonido.nota(M.midi(col[v]), t0 + (2*i + k)*1.0, 0.9); })); });
+        }));
+      s.appendChild(acc);
     }
     nuevo();
   }
@@ -323,9 +405,21 @@
       boton('− acorde', 'mini', () => { libre.cols = ed.cols(); if (libre.cols.length > 1) libre.cols.pop(); dibujar(); }),
       boton('Borrar voces superiores', 'mini', () => { libre.cols = ed.cols().map(c => ({S: null, A: null, T: null, B: c.B})); dibujar(); }));
     el.appendChild(barra);
+    // grabar una progresión tocándola en el teclado MIDI
+    if (window.Midi){
+      Midi.panel(el);
+      const g = h('div', 'lz-botones');
+      const bg = boton('● Grabar con el teclado', 'secondary', () => {
+        grabando = !grabando; bg.textContent = grabando ? '■ Detener la grabación' : '● Grabar con el teclado'; bg.classList.toggle('grabando', grabando);
+        if (grabando){ libre.cols = [{S: null, A: null, T: null, B: null}]; dibujar(); }
+      });
+      g.append(bg, boton('Deshacer el último acorde', 'mini', () => ed.quitarColumna()));
+      el.appendChild(g);
+    }
     const z = h('div'); el.appendChild(z);
     let ed = null;
-    const dibujar = () => { ed = ED.crear(z, {K: libre.K, cols: libre.cols, onCambio: (an, cols) => { libre.cols = cols; }}); };
+    let grabando = false;
+    const dibujar = () => { ed = ED.crear(z, {K: libre.K, cols: libre.cols, onCambio: (an, cols) => { libre.cols = cols; }, grabar: () => grabando}); };
     sk.addEventListener('change', () => {
       const [arm, modo] = sk.value.split(':');
       libre.K = A.tonalidad(+arm, modo);
